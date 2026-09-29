@@ -50,6 +50,41 @@ namespace PrograProyectoFinal
             Close();
         }
 
+        // Crea un botón de juego con una sola línea (para las ventanas nuevas)
+        protected BotonPixel Boton(string texto, int x, int y, int w, int h, Color fondo, Color sombra, EventHandler clic, float tam = 13)
+        {
+            BotonPixel b = new BotonPixel();
+            b.Text = texto;
+            b.Location = new Point(x, y);
+            b.Size = new Size(w, h);
+            b.TamLetra = tam;
+            b.Colores(fondo, sombra);
+            b.Click += clic;
+            Controls.Add(b);
+            return b;
+        }
+
+        // La ventana tiembla (terremoto, estafas): un Timer la mueve de un lado a otro
+        public void Sacudir()
+        {
+            Point origen = Location;
+            int paso = 0;
+            Random r = new Random();
+            System.Windows.Forms.Timer temblor = new System.Windows.Forms.Timer { Interval = 25 };
+            temblor.Tick += (s, e) =>
+            {
+                paso++;
+                int fuerza = Math.Max(1, 12 - paso / 2);
+                Location = paso < 22 ? new Point(origen.X + r.Next(-fuerza, fuerza + 1), origen.Y + r.Next(-fuerza, fuerza + 1)) : origen;
+                if (paso >= 22)
+                {
+                    temblor.Stop();
+                    temblor.Dispose();
+                }
+            };
+            temblor.Start();
+        }
+
         // Las pantallas grandes entran con un fundido (sube Opacity con un Timer)
         protected override void OnShown(EventArgs e)
         {

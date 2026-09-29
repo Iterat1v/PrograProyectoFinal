@@ -11,6 +11,7 @@ namespace PrograProyectoFinal
         private string dialogo;                    // lo que dice el cliente en el globo
         private bool esperando = false;            // ya vendió o juega el bot: los botones no se usan
         private int pasoBot = 0;                   // en qué va el bot en su turno
+        private BotonPixel btnOficina;
 
         // Texto que sube flotando cuando entra dinero ("+$127,000")
         private string flotante = "";
@@ -27,6 +28,7 @@ namespace PrograProyectoFinal
             btnPasar.Colores(Paleta.Crema, Paleta.Crema2);
             btnAnterior.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnSiguiente.Colores(Paleta.LilaClaro, Paleta.Crema2);
+            btnOficina = Boton("OFICINA", 874, 12, 116, 62, Paleta.Agua, Paleta.Agua2, btnOficina_Click, 9);
 
             partida.NuevoCliente();
             NuevoTurno();
@@ -52,6 +54,13 @@ namespace PrograProyectoFinal
         private void Avisos()
         {
             Concesionario jugador = partida.JugadorActual;
+
+            // Una vez por partida: todos votan el evento del día
+            if (partida.VotacionPendiente)
+                using (FormVotacion votacion = new FormVotacion(partida))
+                    votacion.ShowDialog(this);
+
+            bool empezoDia = partida.DiaNuevo;
             if (partida.DiaNuevo)
             {
                 partida.DiaNuevo = false;
@@ -67,11 +76,24 @@ namespace PrograProyectoFinal
                 else
                 {
                     Recursos.Sonar("evento");
+                    if (ev == Partida.TERREMOTO) Sacudir();
                     FormAviso.Mostrar(this, $"{titulo}: {Partida.NombresEvento[ev]}", Partida.DescripcionesEvento[ev], ColorEvento(ev));
                 }
             }
             else
                 Recursos.Sonar("turno");
+
+            // Subasta del clásico (todos ofrecen en secreto)
+            if (partida.AutoSubasta != null)
+                using (FormSubasta subasta = new FormSubasta(partida))
+                {
+                    subasta.ShowDialog(this);
+                    dialogo = subasta.Resultado;
+                }
+
+            if (empezoDia && !jugador.EsBot)
+                DecisionDeHistoria(jugador);
+            Guardado.Guardar(partida);
 
             if (jugador.EsBot)
             {
@@ -83,6 +105,7 @@ namespace PrograProyectoFinal
             if (jugador.Noticia != "")
             {
                 Recursos.Sonar("estafa");
+                Sacudir();
                 FormAviso.Mostrar(this, $"¡AGUAS, {jugador.Jugador.ToUpper()}!", jugador.Noticia, Paleta.Rosa);
                 jugador.Noticia = "";
             }
@@ -114,8 +137,62 @@ namespace PrograProyectoFinal
 
         private static Color ColorEvento(int evento)
         {
-            Color[] colores = { Paleta.Rosa, Paleta.Agua, Paleta.Oro, Paleta.Verde, Paleta.Rosa, Paleta.Crema2 };
+            Color[] colores = { Paleta.Rosa, Paleta.Agua, Paleta.Oro, Paleta.Verde, Paleta.Rosa, Paleta.Crema2, Paleta.Verde, Paleta.Lila };
             return colores[evento];
+        }
+
+        // Modo historia: en ciertos días hay que decidir, y eso cambia el final
+        private void DecisionDeHistoria(Concesionario jugador)
+        {
+            Historia h = partida.Historia;
+            if (h == null) return;
+            int decision = h.Decision(partida.Dia);
+            if (decision == Historia.COYOTE)
+            {
+                Auto robado = new Auto("Volkswagen", "Jetta", 2018, 140000, 0, partida.Azar.Next(8));
+                if (FormAviso.Preguntar(this, "EL COYOTE", "Un tipo te ofrece un Jetta 2018 \"sin papeles\" en $25,000. Vale $140,000. ¿Se lo compras?",
+                                        Paleta.Gris, Recursos.Autos[0, robado.Color]))
+                {
+                    if (jugador.CompraDirecta(robado, 25000) == null)
+                    {
+                        h.Coyote = true;
+                        jugador.CambiarReputacion(-10);
+                        dialogo = "Ya tienes el Jetta del coyote. Ojalá nadie pregunte...";
+                    }
+                }
+            }
+            else if (decision == Historia.INFLUENCER)
+            {
+                if (FormAviso.Preguntar(this, "UN INFLUENCER", "@AutosChidosMx quiere hacerte promoción por $30,000. Los clientes traerían 20 % más toda la semana.", Paleta.Rosa)
+                    && jugador.Dinero >= 30000)
+                {
+                    jugador.Dinero -= 30000;
+                    h.Influencer = true;
+                    jugador.CambiarReputacion(5);
+                    dialogo = "¡Saliste en TikTok! Los clientes vienen con más ganas.";
+                }
+            }
+            else if (decision == Historia.MORDIDA)
+            {
+                string texto = "El inspector del SAT se acerca: \"Con $50,000 hago como que no vi nada\". ¿Le das?" +
+                               (h.Coyote ? " (Ojo: todavía tienes el Jetta del coyote.)" : "");
+                if (FormAviso.Preguntar(this, "EL INSPECTOR", texto, Paleta.Crema2, Recursos.Clientes[7]) && jugador.Dinero >= 50000)
+                {
+                    jugador.Dinero -= 50000;
+                    h.Mordida = true;
+                    jugador.CambiarReputacion(-15);
+                    dialogo = "El inspector se fue silbando.";
+                }
+            }
+            if (decision != -1)
+                h.Guardar();
+        }
+
+        private void btnOficina_Click(object sender, EventArgs e)
+        {
+            using (FormOficina oficina = new FormOficina(partida.JugadorActual))
+                oficina.ShowDialog(this);
+            Actualizar();
         }
 
         private void Actualizar()
@@ -132,18 +209,16 @@ namespace PrograProyectoFinal
             bool libre = !esperando && !castigado;
             btnVender.Enabled = libre && !partida.YaVendio && partida.ClienteActual != null;
             btnMercado.Enabled = libre;
+            btnOficina.Enabled = libre;
             btnUsarCarta.Enabled = libre && jugador.NumCartas > 0;
             btnPasar.Enabled = !esperando;
             btnPasar.Text = jugador.EsBot ? "JUGANDO EL BOT..." : esperando ? "SIGUIENTE TURNO..." : "PASAR TURNO";
 
-            // REMATAR aparece en el auto seleccionado
+            // TALLER aparece cuando escoges un auto del lote
             int fila = seleccionado - pagina * FILAS;
             btnRematar.Visible = libre && seleccionado != -1 && fila >= 0 && fila < FILAS;
-            if (btnRematar.Visible)
-            {
-                btnRematar.Location = new Point(226, 498);
-                btnRematar.Text = $"REMATAR {Pixel.DineroCorto(jugador.PrecioRemate(jugador.ObtenerAuto(seleccionado)))}";
-            }
+            btnRematar.Location = new Point(236, 498);
+            btnRematar.Text = "TALLER";
             Invalidate();
         }
 
@@ -172,9 +247,17 @@ namespace PrograProyectoFinal
             Pixel.Texto(g, $"{partida.NombreDia} · {partida.Momento}", 128, 56, 9, Paleta.Tenue);
             Pixel.R(g, 464, 8, 64, 64, Paleta.Morado3);
             Pixel.Sprite(g, Recursos.Cara(jugador), 464, 8, 4);
-            Pixel.Texto(g, $"Turno de {jugador.Jugador.ToUpper()}", 544, 40, 15, Paleta.Crema);
-            Pixel.Sprite(g, Recursos.Moneda, 1000, 22, 6);
-            Pixel.Texto(g, Pixel.Dinero(jugador.Dinero), 1048, 40, 17, Paleta.Oro);
+            Pixel.Texto(g, $"Turno de {jugador.Jugador.ToUpper()}", 544, 30, 13, Paleta.Crema);
+            // reputación del lote
+            Pixel.Texto(g, "REP", 544, 62, 8, Paleta.Tenue);
+            Pixel.R(g, 580, 56, 144, 12, Paleta.Negro);
+            Color colorRep = jugador.Reputacion >= 60 ? Paleta.Verde : jugador.Reputacion >= 30 ? Paleta.Oro : Paleta.Rosa;
+            Pixel.R(g, 582, 58, 140 * jugador.Reputacion / 100, 8, colorRep);
+            Pixel.Texto(g, $"{jugador.Reputacion}", 732, 62, 8, colorRep);
+            if (jugador.DeudaBanco + jugador.DeudaCompadre > 0)
+                Pixel.Texto(g, $"debes {Pixel.DineroCorto(jugador.DeudaBanco + jugador.DeudaCompadre)}", 772, 62, 8, Paleta.Rosa);
+            Pixel.Sprite(g, Recursos.Moneda, 1002, 22, 6);
+            Pixel.Texto(g, Pixel.Dinero(jugador.Dinero), 1046, 40, 15, Paleta.Oro);
 
             // ----- mi lote -----
             Pixel.Panel(g, 20, 104, 380, 512, Paleta.Crema);
@@ -200,6 +283,9 @@ namespace PrograProyectoFinal
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], f.X + 8, f.Y + 18, 4);
                 Pixel.Texto(g, auto.Nombre, f.X + 148, f.Y + 34, 12, Paleta.Noche);
                 Pixel.Texto(g, Pixel.Dinero(jugador.PrecioVenta(auto)), f.X + 148, f.Y + 70, 12, Paleta.Verde2);
+                if (auto.Estado != Auto.NORMAL)
+                    Pixel.Texto(g, Auto.NombresEstado[auto.Estado], f.Right - 8, f.Y + 14, 7,
+                                auto.Estado == Auto.CHOCADO ? Paleta.Rosa2 : Paleta.Agua2, StringAlignment.Far);
             }
 
             Pixel.Texto(g, "MIS CARTAS", 44, 524, 12, Paleta.Morado2);
@@ -211,7 +297,10 @@ namespace PrograProyectoFinal
 
             // ----- showroom con el cliente -----
             Pixel.R(g, 420, 104, 500, 380, Paleta.Showroom);
+            Escenario.Dibujar(g, partida.Zona, new Rectangle(420, 112, 500, 300));
+            Pixel.R(g, 420, 412, 500, 72, Paleta.Showroom);
             Pixel.R(g, 420, 104, 500, 8, Paleta.Negro);
+            Pixel.Texto(g, $"LOTE EN {Partida.Zonas[partida.Zona]}", 432, 474, 8, Paleta.Tenue);
             for (int x = 428; x < 920; x += 48)
                 Pixel.R(g, x, 420, 24, 4, Paleta.Morado3);
 
@@ -381,17 +470,18 @@ namespace PrograProyectoFinal
 
         private void btnRematar_Click(object sender, EventArgs e)
         {
-            Concesionario jugador = partida.JugadorActual;
-            Auto auto = jugador.ObtenerAuto(seleccionado);
-            double precio = jugador.PrecioRemate(auto);
-            if (!FormAviso.Preguntar(this, "¿REMATAR?", $"El lote de enfrente te da {Pixel.Dinero(precio)} por el {auto.Nombre} (70 % de lo que te costó) y regresa al mercado.",
-                                     Paleta.Oro, Recursos.Autos[auto.Tipo, auto.Color]))
-                return;
-            jugador.Rematar(seleccionado);
-            seleccionado = -1;
-            Recursos.Sonar("compra");
-            MostrarFlotante(precio);
-            dialogo = $"Remataste el {auto.Nombre}. Algo es algo.";
+            using (FormTaller taller = new FormTaller(partida.JugadorActual, seleccionado))
+            {
+                if (taller.ShowDialog(this) == DialogResult.OK)
+                {
+                    dialogo = taller.Resultado;
+                    if (taller.Rematado > 0)
+                    {
+                        MostrarFlotante(taller.Rematado);
+                        seleccionado = -1;
+                    }
+                }
+            }
             Actualizar();
         }
 

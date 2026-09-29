@@ -5,13 +5,13 @@ namespace PrograProyectoFinal
     {
         private string[] reglas =
         {
-            "Juegan de 2 a 4 en la misma computadora (con + BOT juegas contra la compu). Cada quien empieza con $500,000.",
+            "De 2 a 4 en la misma compu o contra bots, en la zona que escojas (de Ecatepec a Polanco). En MODO HISTORIA juegas 5 semanas contra 5 jefes. Empiezas con $500,000.",
             "La partida dura 5 días de 2 turnos (mañana y tarde). Llega un cliente que dice qué tipo de auto busca, cuánto trae y a veces de qué color (si no lo tienes, lo pintas por $10,000).",
-            "Compra autos en el MERCADO para tener qué vender. Hay 30 autos y cada uno solo lo puede comprar un jugador. Tu lote aguanta 10.",
+            "En el MERCADO escoges el auto y su color (a cada cliente le gustan unos y odia otros). Los CHOCADOS salen a mitad de precio: repáralos o túnealos en el TALLER.",
             "Escoge un auto de tu lote y dale VENDER: tú pones el precio y el cliente acepta o te contraoferta (3 intentos). Si es de otro tipo, solo lo compra muy barato. Sin dinero, REMATA un auto al 70 %.",
             "Antes de empezar hay un draft: salen 16 ABILICARDS y cada quien escoge 3. Regateo te ayuda, Estafa ataca a un rival y Aseguradora te defiende sola.",
-            "Cada vendedor tiene su ventaja. Licenciado: vende 5 % más caro. La Doña: sus clientes traen 10 % más. Junior: $20,000 extra. Don Chuy: sus autos valen 10 % más al final.",
-            "Cada día puede pasar algo: terremoto, huracán, Black Friday, Navidad, Hot Sale, zombies o que no llegue nadie. También llega El Bro o un señor que te vende su coche. MENÚ o Esc para pausa, revancha o rendirse."
+            "Cuida tu REPUTACIÓN: estafar, vender chatarra o que se te vaya un cliente la baja, y con mala fama llegan menos clientes. En la OFICINA pides préstamos y contratas vendedor y mecánico.",
+            "Cada día puede pasar algo (terremoto, Black Friday, zombies, subasta...) y una vez por partida todos votan el evento. Los clientes regresan y se acuerdan de lo que les vendiste. La partida se guarda sola."
         };
 
         public FormReglas()

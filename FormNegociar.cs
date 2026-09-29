@@ -21,7 +21,9 @@ namespace PrograProyectoFinal
             this.indice = indice;
             auto = partida.JugadorActual.ObtenerAuto(indice);
             precio = partida.JugadorActual.PrecioVenta(auto);
-            respuesta = partida.ClienteActual.Saludo;
+            Cliente cliente = partida.ClienteActual;
+            respuesta = $"{cliente.OpinionEstado(auto)} {cliente.OpinionColor(auto)}".Trim();
+            if (respuesta == "") respuesta = cliente.Saludo;
 
             btnOfrecer.Colores(Paleta.Verde, Paleta.Verde2);
             btnSuOferta.Colores(Paleta.Oro, Paleta.Oro2);
@@ -56,13 +58,13 @@ namespace PrograProyectoFinal
             Pixel.R(g, 630, 100, 334, 190, Paleta.LilaClaro);
             Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], 699, 112, 6);
             Pixel.Texto(g, $"{auto.Nombre} · {auto.NombreTipo}", 797, 226, 12, Paleta.Noche, StringAlignment.Center);
-            Pixel.Texto(g, $"Te costó {Pixel.Dinero(auto.Precio)}", 797, 262, 11, Paleta.Gris, StringAlignment.Center);
+            Pixel.Texto(g, $"Te costó {Pixel.Dinero(auto.Costo)}", 797, 262, 11, Paleta.Gris, StringAlignment.Center);
 
             // precio
             Pixel.Texto(g, "TU PRECIO", Width / 2, 330, 12, Paleta.Morado2, StringAlignment.Center);
-            Color colorPrecio = precio < auto.Precio ? Paleta.Rosa2 : Paleta.Verde2;
+            Color colorPrecio = precio < auto.Costo ? Paleta.Rosa2 : Paleta.Verde2;
             Pixel.Texto(g, Pixel.Dinero(precio), Width / 2, 382, 22, colorPrecio, StringAlignment.Center);
-            double ganancia = precio - auto.Precio;
+            double ganancia = precio - auto.Costo;
             string texto = ganancia >= 0 ? $"ganas {Pixel.Dinero(ganancia)}" : $"pierdes {Pixel.Dinero(-ganancia)}";
             Pixel.Texto(g, texto, Width / 2, 432, 11, colorPrecio, StringAlignment.Center);
 

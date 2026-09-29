@@ -99,10 +99,13 @@ namespace PrograProyectoFinal
                 }
 
                 if (!conviene) continue;
+                double antes = rival?.Patrimonio() ?? 0;
                 string resultado = carta.Aplicar(bot, rival, out bool usada);
                 if (usada)
                 {
                     bot.QuitarCarta(i);
+                    if (carta is Estafa)
+                        partida.RegistrarEstafa(bot, rival, carta, Math.Max(0, antes - rival.Patrimonio()));
                     return $"usó \"{carta.Nombre}\". {resultado}";
                 }
             }
@@ -153,7 +156,14 @@ namespace PrograProyectoFinal
                 if (elegido != null && bot.Comprar(elegido, partida.FactorMercado) == null)
                     compras += compras == "" ? elegido.Nombre : $" y {elegido.Nombre}";
             }
-            return compras == "" ? null : $"compró {compras}.";
+            // Menos el botardo, todos mandan al taller lo que compraron chocado
+            string taller = "";
+            if (nivel != BOTARDO)
+                for (int i = 0; i < bot.NumAutos; i++)
+                    if (bot.ObtenerAuto(i).Estado == Auto.CHOCADO && bot.Reparar(i) == null)
+                        taller += $" Reparó el {bot.ObtenerAuto(i).Nombre}.";
+            if (compras == "" && taller == "") return null;
+            return (compras == "" ? "" : $"compró {compras}.") + taller;
         }
 
         private static int TipoQueFalta(Concesionario bot, Random azar)
@@ -190,7 +200,7 @@ namespace PrograProyectoFinal
             Auto auto = bot.ObtenerAuto(indice);
             string nombre = auto.Nombre;
             double pedido;
-            if (cliente.AceptaCualquiera || bot.VentaSegura) pedido = auto.Precio * 1.5;
+            if (cliente.AceptaCualquiera || bot.VentaSegura) pedido = auto.ValorActual() * 1.5;
             else if (bot.NivelBot == BOTARDO) pedido = bot.PrecioVenta(auto) * (1.0 + partida.Azar.NextDouble() * 0.8);
             else if (bot.NivelBot == PRO) pedido = bot.PrecioVenta(auto) * 1.25;    // el Pro pide alto y luego baja
             else pedido = bot.PrecioVenta(auto);
@@ -200,7 +210,7 @@ namespace PrograProyectoFinal
             {
                 if (partida.OfrecerPrecio(indice, pedido, out string respuesta, out double contra, out recibido))
                     return $"vendió el {nombre} en ${pedido:N0}.";
-                bool acepta = bot.NivelBot == BOTARDO ? partida.Azar.Next(2) == 0 : contra >= auto.Precio * 1.05;
+                bool acepta = bot.NivelBot == BOTARDO ? partida.Azar.Next(2) == 0 : contra >= auto.Costo * 1.05;
                 if (partida.YaVendio || !acepta)
                     return $"no se puso de acuerdo con el cliente por el {nombre}.";
                 pedido = contra;
@@ -222,7 +232,7 @@ namespace PrograProyectoFinal
             {
                 Auto a = bot.ObtenerAuto(i);
                 double limite = cliente.Limite(a, lic, bot.VentaSegura);
-                double ganancia = limite - a.Precio;
+                double ganancia = limite - a.Costo;
                 if (ganancia > mejorGanancia)
                 {
                     mejor = i;

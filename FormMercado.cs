@@ -9,6 +9,7 @@ namespace PrograProyectoFinal
         private Auto[] catalogo;
         private double factor;      // 0.7 en Black Friday
         private int seleccionado = -1;
+        private int colorElegido = 0;     // el color con el que te lo llevas
         private string aviso = "";
 
         internal FormMercado(Partida partida)
@@ -32,6 +33,8 @@ namespace PrograProyectoFinal
             return new Rectangle(40 + columna * 204, 76 + fila * 110, 196, 102);
         }
 
+        private Rectangle Muestra(int color) => new Rectangle(470 + color * 38, 632, 30, 30);
+
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
@@ -50,7 +53,10 @@ namespace PrograProyectoFinal
                 else
                     Pixel.Panel(g, c.X, c.Y, c.Width, c.Height, auto.Disponible ? Paleta.Crema : Paleta.Crema2);
 
-                Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], c.X + 50, c.Y + 8, 3);
+                int color = i == seleccionado ? colorElegido : auto.Color;
+                Pixel.Sprite(g, Recursos.Autos[auto.Tipo, color], c.X + 50, c.Y + 8, 3);
+                if (auto.Disponible && auto.Estado == Auto.CHOCADO)
+                    Pixel.Texto(g, "CHOCADO", c.Right - 10, c.Y + 16, 7, Paleta.Rosa2, StringAlignment.Far);
                 Pixel.Texto(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center);
                 if (auto.Disponible)
                     Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto, factor)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
@@ -59,12 +65,23 @@ namespace PrograProyectoFinal
             }
 
             Pixel.Texto(g, $"Tienes {Pixel.Dinero(jugador.Dinero)}  ·  lote {jugador.NumAutos}/{Concesionario.MAX_AUTOS}", 40, 652, 13, Paleta.Oro);
+
+            // Escoger el color con el que te lo llevas
+            if (seleccionado != -1)
+                for (int k = 0; k < Cliente.NombresColor.Length; k++)
+                {
+                    Rectangle m = Muestra(k);
+                    Pixel.R(g, m.X - 3, m.Y - 3, m.Width + 6, m.Height + 6, k == colorElegido ? Paleta.Oro : Paleta.Negro);
+                    Color[] pintura = { Paleta.Rojo, Paleta.Agua, Paleta.Oro, Paleta.Azul, Paleta.Rosa, Paleta.Crema, Paleta.Verde, Paleta.Gris };
+                    Pixel.R(g, m.X, m.Y, m.Width, m.Height, pintura[k]);
+                }
             if (aviso != "")
                 Pixel.Texto(g, aviso, 40, 692, 11, Paleta.Rosa);
             else if (seleccionado != -1)
             {
                 Auto auto = catalogo[seleccionado];
-                Pixel.Texto(g, $"{auto.Nombre} · {auto.NombreTipo} · lo vendes en {Pixel.Dinero(jugador.PrecioVenta(auto))}", 40, 692, 11, Paleta.Crema);
+                string extra = auto.Estado == Auto.CHOCADO ? " · CHOCADO: repáralo en el TALLER" : "";
+                Pixel.Texto(g, $"{auto.Nombre} {Cliente.NombresColor[colorElegido]} · {auto.NombreTipo} · lista {Pixel.Dinero(jugador.PrecioVenta(auto))}{extra}", 40, 692, 10, Paleta.Crema);
             }
             else if (jugador.Sobreprecio)
                 Pixel.Texto(g, "¡Te manipularon el mercado! Todo está 20 % más caro este turno.", 40, 692, 11, Paleta.Rosa);
@@ -85,8 +102,18 @@ namespace PrograProyectoFinal
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
+            if (seleccionado != -1)
+                for (int k = 0; k < Cliente.NombresColor.Length; k++)
+                    if (Muestra(k).Contains(e.Location))
+                    {
+                        colorElegido = k;
+                        Recursos.Sonar("menu");
+                        Invalidate();
+                        return;
+                    }
             int i = CasillaEn(e.Location);
             if (i == -1) return;
+            colorElegido = catalogo[i].Color;
 
             if (!catalogo[i].Disponible)
             {
@@ -124,6 +151,8 @@ namespace PrograProyectoFinal
         private void Comprar()
         {
             if (seleccionado == -1) return;
+            if (catalogo[seleccionado].Disponible)
+                catalogo[seleccionado].Color = colorElegido;
             string error = jugador.Comprar(catalogo[seleccionado], factor);
             if (error != null)
             {

@@ -125,10 +125,13 @@ namespace PrograProyectoFinal
             else
             {
                 Concesionario objetivo = carta.NecesitaRival ? rivales[rival] : null;
+                double antes = objetivo?.Patrimonio() ?? 0;
                 string resultado = carta.Aplicar(jugador, objetivo, out bool usada);
                 if (usada)
                 {
                     jugador.QuitarCarta(seleccionada);
+                    if (carta is Estafa)
+                        partida.RegistrarEstafa(jugador, objetivo, carta, Math.Max(0, antes - objetivo.Patrimonio()));
                     Resultado = resultado;
                     Recursos.Sonar(carta is Estafa ? "estafa" : "venta");
                     DialogResult = DialogResult.OK;

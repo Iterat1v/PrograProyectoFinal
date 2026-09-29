@@ -35,6 +35,23 @@ namespace PrograProyectoFinal
         private Perfil perfil;               // solo las personas
         private Image cara;                  // su personaje (si lo editó en la tienda)
 
+        // Reputación del lote (0 a 100): si estafas o vendes chatarra, llegan menos clientes
+        private int reputacion = 50;
+
+        // Préstamos
+        public const double TOPE_BANCO = 300000;
+        public const double TOPE_COMPADRE = 100000;
+        public const double INTERES_BANCO = 0.08;       // por día
+        private double deudaBanco = 0;
+        private double deudaCompadre = 0;
+        private int diasCompadre = 0;
+
+        // Empleados (se les paga cada día)
+        public const double SUELDO_VENDEDOR = 15000;
+        public const double SUELDO_MECANICO = 10000;
+        private bool tieneVendedor = false;
+        private bool tieneMecanico = false;
+
         // Estadísticas para el podio
         private int ventas = 0;
         private double mejorVenta = 0;
@@ -82,6 +99,34 @@ namespace PrograProyectoFinal
         public Perfil Perfil { get => perfil; set => perfil = value; }
         public Image Cara { get => cara; set => cara = value; }
         public int Ventas => ventas;
+        public int Reputacion => reputacion;
+        public double DeudaBanco => deudaBanco;
+        public double DeudaCompadre => deudaCompadre;
+        public bool TieneVendedor => tieneVendedor;
+        public bool TieneMecanico => tieneMecanico;
+
+        public void CambiarReputacion(int cuanto)
+        {
+            reputacion = Math.Max(0, Math.Min(100, reputacion + cuanto));
+        }
+
+        // Para cargar una partida guardada
+        public void Restaurar(double dinero, int reputacion, double deudaBanco, double deudaCompadre, int diasCompadre,
+                              bool vendedor, bool mecanico, int ventas, double mejorVenta, string mejorAuto, bool rendido)
+        {
+            this.dinero = dinero;
+            this.reputacion = reputacion;
+            this.deudaBanco = deudaBanco;
+            this.deudaCompadre = deudaCompadre;
+            this.diasCompadre = diasCompadre;
+            tieneVendedor = vendedor;
+            tieneMecanico = mecanico;
+            this.ventas = ventas;
+            this.mejorVenta = mejorVenta;
+            mejorVentaAuto = mejorAuto;
+            this.rendido = rendido;
+        }
+        public int DiasCompadre => diasCompadre;
         public double MejorVenta => mejorVenta;
         public string MejorVentaAuto => mejorVentaAuto;
 
@@ -113,7 +158,7 @@ namespace PrograProyectoFinal
         // factorEvento: 0.7 en Black Friday, 1 en un día normal
         public double PrecioCompra(Auto auto, double factorEvento = 1)
         {
-            double precio = auto.Precio * (1 - descuento) * factorEvento;
+            double precio = auto.ValorActual() * (1 - descuento) * factorEvento;
             if (sobreprecio)
                 precio *= 1.20;
             return Math.Round(precio / 1000) * 1000;
@@ -131,6 +176,7 @@ namespace PrograProyectoFinal
                 return $"No te alcanza: cuesta ${precio:N0}.";
 
             Dinero -= precio;
+            auto.Costo = precio;
             RecibirAuto(auto);
             auto.Disponible = false;
             descuento = 0;              // el descuento es solo para una compra
@@ -145,8 +191,101 @@ namespace PrograProyectoFinal
             if (precio > dinero)
                 return "No te alcanza.";
             Dinero -= precio;
+            auto.Costo = precio;
             RecibirAuto(auto);
             return null;
+        }
+
+        // ----- taller -----
+
+        public string Reparar(int indice)
+        {
+            Auto auto = autos[indice];
+            if (auto.Estado != Auto.CHOCADO) return "Ese auto no está chocado.";
+            double costo = auto.CostoReparar(tieneMecanico);
+            if (costo > dinero) return $"No te alcanza: la reparación cuesta ${costo:N0}.";
+            Dinero -= costo;
+            auto.Costo += costo;
+            auto.Estado = Auto.NORMAL;
+            return null;
+        }
+
+        public string Tunear(int indice)
+        {
+            Auto auto = autos[indice];
+            if (auto.Estado == Auto.CHOCADO) return "Primero hay que repararlo.";
+            if (auto.Estado == Auto.TUNEADO) return "Ya está tuneado.";
+            double costo = auto.CostoTunear(tieneMecanico);
+            if (costo > dinero) return $"No te alcanza: tunearlo cuesta ${costo:N0}.";
+            Dinero -= costo;
+            auto.Costo += costo;
+            auto.Estado = Auto.TUNEADO;
+            return null;
+        }
+
+        // ----- préstamos -----
+
+        public string PedirBanco(double monto)
+        {
+            if (deudaBanco + monto > TOPE_BANCO) return $"El banco solo te presta hasta ${TOPE_BANCO:N0}.";
+            deudaBanco += monto;
+            Dinero += monto;
+            return null;
+        }
+
+        public string PedirCompadre(double monto)
+        {
+            if (deudaCompadre + monto > TOPE_COMPADRE) return $"Tu compadre solo tiene ${TOPE_COMPADRE:N0}.";
+            if (deudaCompadre == 0) diasCompadre = 0;
+            deudaCompadre += monto;
+            Dinero += monto;
+            return null;
+        }
+
+        public string Pagar(bool banco, double monto)
+        {
+            double deuda = banco ? deudaBanco : deudaCompadre;
+            monto = Math.Min(monto, deuda);
+            if (monto <= 0) return "No debes nada.";
+            if (monto > dinero) return "No te alcanza para pagar.";
+            Dinero -= monto;
+            if (banco) deudaBanco -= monto; else deudaCompadre -= monto;
+            return null;
+        }
+
+        // ----- empleados -----
+
+        public void Contratar(bool vendedorEmp, bool contratar)
+        {
+            if (vendedorEmp) tieneVendedor = contratar; else tieneMecanico = contratar;
+        }
+
+        // Cada mañana: intereses, sueldos y el compadre que ya quiere su dinero
+        public void NuevoDia()
+        {
+            if (deudaBanco > 0)
+                deudaBanco = Math.Round(deudaBanco * (1 + INTERES_BANCO) / 100) * 100;
+            if (deudaCompadre > 0)
+            {
+                diasCompadre++;
+                if (diasCompadre >= 3)
+                {
+                    CambiarReputacion(-10);
+                    Noticia = "Tu compadre ya te está cobrando en el grupo de la familia. -10 de reputación.";
+                }
+            }
+            double sueldos = (tieneVendedor ? SUELDO_VENDEDOR : 0) + (tieneMecanico ? SUELDO_MECANICO : 0);
+            if (sueldos > 0)
+            {
+                if (sueldos <= dinero)
+                    Dinero -= sueldos;
+                else
+                {
+                    tieneVendedor = false;
+                    tieneMecanico = false;
+                    Noticia = "No alcanzó para los sueldos y tus empleados renunciaron.";
+                }
+            }
         }
 
         // Los zombies se llevan una carta; si no tiene, dinero
@@ -205,6 +344,15 @@ namespace PrograProyectoFinal
                 detalle += $" Bono: +${bonoVenta:N0}.";
             }
 
+            // La reputación sube o baja según lo que vendiste
+            if (auto.Estado == Auto.CHOCADO)
+            {
+                CambiarReputacion(-10);
+                detalle += " Vendiste chatarra: -10 de reputación.";
+            }
+            else
+                CambiarReputacion(auto.Estado == Auto.TUNEADO ? 4 : 2);
+
             Dinero = Math.Max(0, dinero + recibido);
             QuitarAuto(indice);
             bonoVenta = 0;
@@ -225,7 +373,7 @@ namespace PrograProyectoFinal
 
         public double PrecioRemate(Auto auto)
         {
-            return Math.Round(auto.Precio * REMATE / 1000) * 1000;
+            return Math.Round(auto.ValorActual() * REMATE / 1000) * 1000;
         }
 
         public double Rematar(int indice)
@@ -233,7 +381,7 @@ namespace PrograProyectoFinal
             Auto auto = QuitarAuto(indice);
             double precio = PrecioRemate(auto);
             Dinero += precio;
-            auto.Disponible = true;
+            auto.Disponible = auto.IndiceCatalogo >= 0;   // regresa al mercado
             return precio;
         }
 
@@ -292,15 +440,15 @@ namespace PrograProyectoFinal
             noticia = "";
         }
 
-        // Ganancia = dinero + valor de los autos que le quedan
+        // Ganancia = dinero + valor de los autos que le quedan - lo que debe
         public double Patrimonio()
         {
             double valorAutos = 0;
             for (int i = 0; i < numAutos; i++)
-                valorAutos += autos[i].Precio;
+                valorAutos += autos[i].ValorActual();
             if (vendedor == DON_CHUY)
                 valorAutos *= 1.10;
-            return dinero + valorAutos;
+            return dinero + valorAutos - deudaBanco - deudaCompadre;
         }
     }
 }

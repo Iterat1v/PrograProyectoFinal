@@ -5,14 +5,22 @@ namespace PrograProyectoFinal
     {
         private const int MAX_CARACTERES = 12;
 
-        private Partida partida = new Partida();
+        private int zona;
+        private Partida partida;
         private string[] duenos = new string[4];   // quién tiene a cada vendedor (null = libre)
         private int elegido = -1;
         private string aviso = "";                 // mensaje de error en rosa, en vez de MessageBox
 
-        public FormRegistro()
+        public FormRegistro() : this(0)
+        {
+        }
+
+        public FormRegistro(int zona)
         {
             InitializeComponent();
+            this.zona = zona;
+            partida = new Partida(zona, null);
+            Titulo = $"¡BIENVENIDO! · ELIGE A TU VENDEDOR · LOTE EN {Partida.Zonas[zona]}";
             txtNombre.Font = Recursos.Letra(17);
             txtNombre.MaxLength = MAX_CARACTERES;
             btnAgregar.Colores(Paleta.Crema, Paleta.Crema2);
@@ -242,7 +250,7 @@ namespace PrograProyectoFinal
         // LIMPIAR: empieza el registro desde cero
         private void btnLimpiar_Click(object sender, EventArgs e)
         {
-            partida = new Partida();
+            partida = new Partida(zona, null);
             duenos = new string[4];
             txtNombre.Text = "";
             aviso = "";

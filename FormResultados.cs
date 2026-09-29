@@ -7,6 +7,8 @@ namespace PrograProyectoFinal
         private Concesionario[] ranking;
         private string[] recompensas = new string[4];
         private bool[] subio = new bool[4];
+        private string titulo;
+        private bool ganoSemana = false;        // modo historia
 
         internal FormResultados(Partida partida)
         {
@@ -14,9 +16,40 @@ namespace PrograProyectoFinal
             this.partida = partida;
             ranking = partida.Ranking();
             DarRecompensas();
+            Guardado.Borrar();          // la partida ya terminó: ya no hay qué continuar
             btnRevancha.Colores(Paleta.Oro, Paleta.Oro2);
             btnNueva.Colores(Paleta.Verde, Paleta.Verde2);
             btnSalir.Colores(Paleta.Rosa, Paleta.Rosa2);
+            titulo = $"¡GANÓ {ranking[0].Jugador.ToUpper()}!";
+
+            // Modo historia: ¿le ganaste al jefe?
+            Historia h = partida.Historia;
+            if (h != null)
+            {
+                Concesionario tu = null;
+                for (int i = 0; i < partida.NumJugadores; i++)
+                    if (!partida.ObtenerJugador(i).EsBot) tu = partida.ObtenerJugador(i);
+                ganoSemana = tu != null && !tu.Rendido && ranking[0] == tu;
+                if (ganoSemana)
+                {
+                    h.Reputacion = tu.Reputacion;
+                    h.GanoSemana();
+                    h.Guardar();
+                    titulo = h.Terminada ? "¡ERES EL REY DE LA CDMX!" : $"¡GANASTE LA SEMANA {h.Semana}!";
+                    btnRevancha.Text = h.Terminada ? "VER EL FINAL" : "SIGUIENTE SEMANA";
+                }
+                else
+                {
+                    titulo = "PERDISTE LA SEMANA";
+                    btnRevancha.Text = "REINTENTAR";
+                }
+                btnNueva.Text = "VER EL MAPA";
+            }
+
+            // La mejor estafa de la partida se puede volver a ver
+            if (partida.MejorEstafaUsuario != null)
+                Boton("REPETICIÓN", 40, 440, 250, 60, Paleta.Rosa, Paleta.Rosa2,
+                      (s, e) => { using (FormRepeticion r = new FormRepeticion(partida)) r.ShowDialog(this); }, 11);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -37,7 +70,9 @@ namespace PrograProyectoFinal
                 Pixel.R(g, x, y, 8, 8, colores[i % 4]);
             }
 
-            Pixel.SombraTexto(g, $"¡GANÓ {ranking[0].Jugador.ToUpper()}!", 640, 80, 64, Paleta.Oro, Paleta.Rosa);
+            Pixel.SombraTexto(g, titulo, 640, 80, titulo.Length > 16 ? 48 : 64, Paleta.Oro, Paleta.Rosa);
+            if (partida.MejorEstafaUsuario != null)
+                Pixel.Texto(g, $"Mejor estafa: {partida.MejorEstafaUsuario.Jugador} ({Pixel.DineroCorto(partida.MejorEstafaPerdida)})", 40, 420, 9, Paleta.Rosa);
 
             // podio: {lugar, x, alto}
             int[,] podio = { { 1, 380, 220 }, { 0, 540, 300 }, { 2, 700, 160 } };
@@ -122,11 +157,24 @@ namespace PrograProyectoFinal
 
         private void btnRevancha_Click(object sender, EventArgs e)
         {
-            IrA(new FormDraft(partida.Revancha()));
+            Historia h = partida.Historia;
+            if (h == null)
+                IrA(new FormDraft(partida.Revancha()));
+            else if (h.Terminada)
+                IrA(new FormFinal(h));
+            else if (ganoSemana)
+                IrA(new FormHistoria(h));
+            else
+                IrA(new FormDraft(partida.Revancha()));     // reintentar la misma semana
         }
 
         private void btnNueva_Click(object sender, EventArgs e)
         {
+            if (partida.Historia != null)
+            {
+                IrA(new FormHistoria(partida.Historia));
+                return;
+            }
             IrA(new FormRegistro());
         }
 
