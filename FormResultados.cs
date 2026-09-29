@@ -3,12 +3,15 @@ namespace PrograProyectoFinal
     // Pantalla 4: el podio con el ranking final (ordenado con burbuja)
     public partial class FormResultados : FormPixel
     {
+        private Partida partida;
         private Concesionario[] ranking;
 
         internal FormResultados(Partida partida)
         {
             InitializeComponent();
+            this.partida = partida;
             ranking = partida.Ranking();
+            btnRevancha.Colores(Paleta.Oro, Paleta.Oro2);
             btnNueva.Colores(Paleta.Verde, Paleta.Verde2);
             btnSalir.Colores(Paleta.Rosa, Paleta.Rosa2);
         }
@@ -48,13 +51,18 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, $"{lugar + 1}", x + 80, y + 52, 24, Paleta.Noche, StringAlignment.Center);
                 Pixel.Sprite(g, Recursos.Vendedores[j.Vendedor], x + 16, y - 132, 8);
                 Pixel.Texto(g, j.Jugador, x + 80, y + 104, 12, Paleta.Noche, StringAlignment.Center);
-                Pixel.Texto(g, Pixel.Dinero(j.Patrimonio()), x + 80, y + 140, 11, Paleta.Noche, StringAlignment.Center);
+                Pixel.Texto(g, j.Rendido ? "se rindió" : Pixel.Dinero(j.Patrimonio()), x + 80, y + 140, 11, Paleta.Noche, StringAlignment.Center);
             }
             if (ranking.Length == 4)
-                Pixel.Texto(g, $"4. {ranking[3].Jugador}  {Pixel.Dinero(ranking[3].Patrimonio())}", 1240, 576, 11, Paleta.Tenue, StringAlignment.Far);
+                Pixel.Texto(g, $"4. {ranking[3].Jugador}  {(ranking[3].Rendido ? "se rindió" : Pixel.Dinero(ranking[3].Patrimonio()))}", 1240, 576, 11, Paleta.Tenue, StringAlignment.Far);
 
             Pixel.R(g, 0, 600, Pixel.ANCHO, 120, Paleta.Piso);
             Pixel.R(g, 0, 600, Pixel.ANCHO, 6, Paleta.Negro);
+        }
+
+        private void btnRevancha_Click(object sender, EventArgs e)
+        {
+            IrA(new FormDraft(partida.Revancha()));
         }
 
         private void btnNueva_Click(object sender, EventArgs e)

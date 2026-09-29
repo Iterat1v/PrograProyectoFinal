@@ -9,11 +9,13 @@ namespace PrograProyectoFinal
         private int seleccionado = -1;             // índice del auto escogido en el lote
         private int pagina = 0;
         private string dialogo;                    // lo que dice el cliente en el globo
+        private bool esperando = false;            // ya vendió y se va a pasar el turno solo
 
         internal FormTablero(Partida partida)
         {
             InitializeComponent();
             this.partida = partida;
+            btnMenu.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnMercado.Colores(Paleta.Oro, Paleta.Oro2);
             btnVender.Colores(Paleta.Verde, Paleta.Verde2);
             btnUsarCarta.Colores(Paleta.Rosa, Paleta.Rosa2);
@@ -23,18 +25,85 @@ namespace PrograProyectoFinal
 
             partida.NuevoCliente();
             NuevoTurno();
+            // Los avisos se enseñan cuando ya se ve la ventana
+            Shown += (s, e) => Avisos();
         }
 
         private void NuevoTurno()
         {
             seleccionado = -1;
             pagina = 0;
+            esperando = false;
             if (partida.JugadorActual.PierdeTurno)
                 dialogo = "¡¿Por qué tan caro?! Mejor me voy a otro lado...";
+            else if (partida.ClienteActual == null)
+                dialogo = "...";
             else
                 dialogo = partida.ClienteActual.Saludo;
-            Recursos.Sonar(partida.JugadorActual.Noticia != "" ? "estafa" : "turno");
             Actualizar();
+        }
+
+        // Al empezar un turno: el evento del día y lo que le hicieron al jugador
+        private void Avisos()
+        {
+            Concesionario jugador = partida.JugadorActual;
+            if (partida.DiaNuevo)
+            {
+                partida.DiaNuevo = false;
+                int ev = partida.Evento;
+                string titulo = $"DÍA {partida.Dia} · {partida.NombreDia}";
+                if (ev == -1)
+                {
+                    Recursos.Sonar("turno");
+                    string texto = partida.Ronda == 1 ? "¡Abrimos el lote! Cada día tiene 2 turnos: mañana y tarde. Compren autos en el MERCADO y a vender."
+                                                      : "Día normal. Ni terremotos ni zombies: puro vender.";
+                    FormAviso.Mostrar(this, titulo, texto, Paleta.Agua);
+                }
+                else
+                {
+                    Recursos.Sonar("evento");
+                    FormAviso.Mostrar(this, $"{titulo}: {Partida.NombresEvento[ev]}", Partida.DescripcionesEvento[ev], ColorEvento(ev));
+                }
+            }
+            else
+                Recursos.Sonar("turno");
+
+            if (jugador.Noticia != "")
+            {
+                Recursos.Sonar("estafa");
+                FormAviso.Mostrar(this, $"¡AGUAS, {jugador.Jugador.ToUpper()}!", jugador.Noticia, Paleta.Rosa);
+                jugador.Noticia = "";
+            }
+            // Decisión: un señor te ofrece su coche barato
+            if (!jugador.PierdeTurno && partida.HayOferta())
+            {
+                Auto oferta = partida.OfertaAuto;
+                Recursos.Sonar("bro");
+                string texto = $"{partida.OfertaSenor} te ofrece su {oferta.Nombre} ({oferta.NombreTipo}) en {Pixel.Dinero(partida.OfertaPrecio)}. " +
+                               $"Vale {Pixel.Dinero(oferta.Precio)}. ¿Se lo compras?";
+                if (FormAviso.Preguntar(this, "¡TE VENDEN UN COCHE!", texto, Paleta.Oro, Recursos.Autos[oferta.Tipo, oferta.Color]))
+                {
+                    string error = jugador.CompraDirecta(oferta, partida.OfertaPrecio);
+                    if (error != null)
+                        FormAviso.Mostrar(this, "NO SE PUDO", error, Paleta.Rosa);
+                    else
+                    {
+                        Recursos.Sonar("compra");
+                        dialogo = $"¡Buena compra! El {oferta.Nombre} ya está en tu lote.";
+                    }
+                }
+            }
+
+            if (jugador.PierdeTurno)
+                FormAviso.Mostrar(this, "PIERDES EL TURNO", "Alguien te lanzó \"¿Por qué tan caro?\" y tu cliente se fue. Solo puedes PASAR TURNO.",
+                                  Paleta.Rosa, Recursos.Clientes[partida.ClienteActual?.Retrato ?? 0]);
+            Actualizar();
+        }
+
+        private static Color ColorEvento(int evento)
+        {
+            Color[] colores = { Paleta.Rosa, Paleta.Agua, Paleta.Oro, Paleta.Verde, Paleta.Rosa, Paleta.Crema2 };
+            return colores[evento];
         }
 
         private void Actualizar()
@@ -46,10 +115,14 @@ namespace PrograProyectoFinal
             btnSiguiente.Visible = jugador.NumAutos > FILAS;
             btnAnterior.Enabled = pagina > 0;
             btnSiguiente.Enabled = pagina < paginas - 1;
+
             bool castigado = jugador.PierdeTurno;
-            btnVender.Enabled = !partida.YaVendio && !castigado;
-            btnMercado.Enabled = !castigado;
-            btnUsarCarta.Enabled = !castigado && jugador.NumCartas > 0;
+            bool libre = !esperando && !castigado;
+            btnVender.Enabled = libre && !partida.YaVendio && partida.ClienteActual != null;
+            btnMercado.Enabled = libre;
+            btnUsarCarta.Enabled = libre && jugador.NumCartas > 0;
+            btnPasar.Enabled = !esperando;
+            btnPasar.Text = esperando ? "SIGUIENTE TURNO..." : "PASAR TURNO";
             Invalidate();
         }
 
@@ -74,7 +147,8 @@ namespace PrograProyectoFinal
             // ----- barra de arriba -----
             Pixel.R(g, 0, 0, Pixel.ANCHO, 84, Paleta.Negro);
             Pixel.R(g, 0, 0, Pixel.ANCHO, 78, Paleta.Morado2);
-            Pixel.Texto(g, $"RONDA {partida.Ronda}/{Partida.RONDAS}", 28, 40, 15, Paleta.Agua);
+            Pixel.Texto(g, $"DÍA {partida.Dia}/{Partida.DIAS}", 128, 28, 12, Paleta.Agua);
+            Pixel.Texto(g, $"{partida.NombreDia} · {partida.Momento}", 128, 56, 9, Paleta.Tenue);
             Pixel.R(g, 464, 8, 64, 64, Paleta.Morado3);
             Pixel.Sprite(g, Recursos.Vendedores[jugador.Vendedor], 464, 8, 4);
             Pixel.Texto(g, $"Turno de {jugador.Jugador.ToUpper()}", 544, 40, 15, Paleta.Crema);
@@ -119,16 +193,25 @@ namespace PrograProyectoFinal
             Pixel.R(g, 420, 104, 500, 8, Paleta.Negro);
             for (int x = 428; x < 920; x += 48)
                 Pixel.R(g, x, 420, 24, 4, Paleta.Morado3);
+
+            // Evento del día
+            if (partida.Evento != -1)
+            {
+                Pixel.R(g, 428, 118, 484, 44, ColorEvento(partida.Evento));
+                Pixel.Texto(g, $"HOY: {Partida.NombresEvento[partida.Evento]}", 670, 140, 11, Paleta.Noche, StringAlignment.Center);
+            }
+
             Pixel.R(g, 472, 176, 192, 240, Paleta.Negro);
             Pixel.R(g, 480, 184, 176, 224, Paleta.Morado3);
-            Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480, 200, 11);
-            Pixel.Texto(g, cliente.Nombre, 568, 452, 13, Paleta.Crema, StringAlignment.Center);
-
-            // Noticia: lo que le hicieron los rivales
-            if (jugador.Noticia != "")
+            if (cliente != null && !jugador.PierdeTurno)
             {
-                Pixel.R(g, 428, 118, 484, 48, Paleta.Rosa);
-                Pixel.Parrafo(g, jugador.Noticia, new Rectangle(440, 122, 464, 44), 10, Paleta.Noche);
+                Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480, 200, 11);
+                Pixel.Texto(g, cliente.Nombre, 568, 452, 13, Paleta.Crema, StringAlignment.Center);
+            }
+            else
+            {
+                Pixel.Texto(g, "?", 568, 296, 30, Paleta.Morado2, StringAlignment.Center);
+                Pixel.Texto(g, "(nadie)", 568, 452, 13, Paleta.Tenue, StringAlignment.Center);
             }
 
             Pixel.Globo(g, 688, 176, 216, 192);
@@ -141,11 +224,15 @@ namespace PrograProyectoFinal
             for (int i = 0; i < ranking.Length; i++)
             {
                 int y = 168 + i * 104;
-                Pixel.R(g, 960, y, 280, 88, i == 0 ? Paleta.OroClaro : Paleta.LilaClaro);
+                Concesionario r = ranking[i];
+                Pixel.R(g, 960, y, 280, 88, r.Rendido ? Paleta.Crema2 : i == 0 ? Paleta.OroClaro : Paleta.LilaClaro);
                 Pixel.Texto(g, $"{i + 1}", 980, y + 44, 15, Paleta.Morado2);
-                Pixel.Sprite(g, Recursos.Vendedores[ranking[i].Vendedor], 1008, y + 12, 4);
-                Pixel.Texto(g, ranking[i].Jugador, 1084, y + 28, 12, Paleta.Noche);
-                Pixel.Texto(g, Pixel.DineroCorto(ranking[i].Patrimonio()), 1084, y + 62, 12, Paleta.Verde2);
+                Pixel.Sprite(g, Recursos.Vendedores[r.Vendedor], 1008, y + 12, 4);
+                Pixel.Texto(g, r.Jugador, 1084, y + 28, 12, r.Rendido ? Paleta.Gris : Paleta.Noche);
+                if (r.Rendido)
+                    Pixel.Texto(g, "se rindió", 1084, y + 62, 11, Paleta.Rosa2);
+                else
+                    Pixel.Texto(g, Pixel.DineroCorto(r.Patrimonio()), 1084, y + 62, 12, Paleta.Verde2);
             }
         }
 
@@ -167,6 +254,7 @@ namespace PrograProyectoFinal
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
+            if (esperando) return;
             for (int k = 0; k < FILAS; k++)
             {
                 int indice = pagina * FILAS + k;
@@ -197,15 +285,42 @@ namespace PrograProyectoFinal
             {
                 dialogo = "¿Qué me enseñas? Escoge un auto de tu lote.";
                 Recursos.Sonar("error");
+                Actualizar();
+                return;
             }
-            else
+
+            dialogo = partida.Vender(seleccionado, out bool vendido);
+            if (!vendido)
             {
-                dialogo = partida.Vender(seleccionado, out bool vendido);
-                if (vendido)
-                    seleccionado = -1;
-                Recursos.Sonar(vendido ? "venta" : "error");
+                Recursos.Sonar("error");
+                Actualizar();
+                return;
+            }
+
+            seleccionado = -1;
+            Recursos.Sonar("venta");
+
+            // De la nada puede llegar un bro con cash
+            if (partida.TalVezLlegaBro())
+            {
+                Actualizar();
+                Recursos.Sonar("bro");
+                FormAviso.Mostrar(this, "¡LLEGÓ UN BRO!", "De la nada se metió El Bro con cash. Te compra el auto que sea y paga 25 % más.",
+                                  Paleta.Lila, Recursos.Clientes[8]);
+                dialogo = partida.ClienteActual.Saludo;
+            }
+            else if (Recursos.PasarAlVender)
+            {
+                esperando = true;
+                timerPasar.Start();
             }
             Actualizar();
+        }
+
+        private void timerPasar_Tick(object sender, EventArgs e)
+        {
+            timerPasar.Stop();
+            PasarTurno();
         }
 
         private void btnUsarCarta_Click(object sender, EventArgs e)
@@ -220,6 +335,12 @@ namespace PrograProyectoFinal
 
         private void btnPasar_Click(object sender, EventArgs e)
         {
+            PasarTurno();
+        }
+
+        private void PasarTurno()
+        {
+            timerPasar.Stop();
             partida.SiguienteTurno();
             if (partida.Terminada)
             {
@@ -227,12 +348,15 @@ namespace PrograProyectoFinal
                 IrA(new FormResultados(partida));
             }
             else
+            {
                 NuevoTurno();
+                Avisos();
+            }
         }
 
         private void btnMercado_Click(object sender, EventArgs e)
         {
-            using (FormMercado mercado = new FormMercado(partida.JugadorActual, partida.Catalogo))
+            using (FormMercado mercado = new FormMercado(partida))
                 mercado.ShowDialog(this);
             Actualizar();
         }
@@ -249,12 +373,63 @@ namespace PrograProyectoFinal
             Actualizar();
         }
 
+        private void btnMenu_Click(object sender, EventArgs e)
+        {
+            AbrirMenu();
+        }
+
+        private void AbrirMenu()
+        {
+            bool estabaEsperando = timerPasar.Enabled;
+            timerPasar.Stop();
+
+            int eleccion;
+            using (FormMenu menu = new FormMenu())
+            {
+                menu.ShowDialog(this);
+                eleccion = menu.Eleccion;
+            }
+
+            Concesionario jugador = partida.JugadorActual;
+            if (eleccion == FormMenu.REVANCHA &&
+                FormAviso.Preguntar(this, "¿REVANCHA?", "Se empieza de cero con los mismos jugadores y vendedores. Esta partida se pierde.", Paleta.Oro))
+            {
+                IrA(new FormDraft(partida.Revancha()));
+                return;
+            }
+            if (eleccion == FormMenu.RENDIRSE &&
+                FormAviso.Preguntar(this, $"¿{jugador.Jugador.ToUpper()} SE RINDE?", "Te sales de la partida y quedas hasta abajo del ranking. Los demás siguen jugando.", Paleta.Rosa))
+            {
+                timerPasar.Stop();
+                partida.Rendirse();
+                if (partida.Terminada)
+                {
+                    Recursos.Sonar("victoria");
+                    IrA(new FormResultados(partida));
+                }
+                else
+                {
+                    NuevoTurno();
+                    Avisos();
+                }
+                return;
+            }
+            if (eleccion == FormMenu.TITULO &&
+                FormAviso.Preguntar(this, "¿SALIR AL TÍTULO?", "Se pierde la partida.", Paleta.Crema2))
+            {
+                VolverAlTitulo();
+                return;
+            }
+
+            if (estabaEsperando)
+                timerPasar.Start();
+        }
+
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape &&
-                MessageBox.Show("¿Salir de la partida?", "Concesionario", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                Application.Exit();
+            if (e.KeyCode == Keys.Escape)
+                AbrirMenu();
         }
     }
 }

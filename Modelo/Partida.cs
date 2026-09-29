@@ -24,6 +24,32 @@ namespace PrograProyectoFinal
         private int rondaDraft = 0;                   // 0, 1, 2: cada jugador escoge 3
         private int posicionDraft = 0;
 
+        // ----- Eventos del día -----
+        public const int TERREMOTO = 0;
+        public const int HURACAN = 1;
+        public const int BLACK_FRIDAY = 2;
+        public const int NAVIDAD = 3;
+        public const int HOT_SALE = 4;
+        public const int NO_HAY_NADIE = 5;
+        public const int ZOMBIES = 6;
+
+        public static readonly string[] NombresEvento =
+            { "¡TERREMOTO!", "¡HURACÁN!", "BLACK FRIDAY", "¡NAVIDAD!", "HOT SALE", "NO HAY NADIEEE", "¡HORDA DE ZOMBIES!" };
+        public static readonly string[] DescripcionesEvento =
+        {
+            "Se abrió la tierra: cada quien pierde un auto al azar de su lote.",
+            "Todos quieren salir del agua: hoy solo buscan pickup y pagan 20 % más.",
+            "Todo el mercado está 30 % más barato hoy.",
+            "Aguinaldo de $30,000 para todos y los clientes traen 15 % más.",
+            "Los clientes andan gastalones: hoy traen 25 % más.",
+            "Hoy no llegó ni un cliente. Solo se puede comprar y usar cartas.",
+            "Es Halloween y llegaron los zombies: a cada quien le roban una carta (o $20,000 si no tiene)."
+        };
+        private static readonly string[] dias = { "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO" };
+
+        private int evento = -1;          // -1 = día normal
+        private bool diaNuevo = true;     // para que la pantalla anuncie el día
+
         private static string[] nombresClientes =
             { "Don Beto", "Doña Lupe", "Kevin", "Sofi", "El Ingeniero", "Don Pancho", "La Güera", "El Profe" };
 
@@ -47,7 +73,21 @@ namespace PrograProyectoFinal
         public bool YaVendio => yaVendio;
         public Concesionario JugadorActual => jugadores[turno];
         public Auto[] Catalogo => catalogo;
-        public bool Terminada => ronda > RONDAS;
+        public bool Terminada => ronda > RONDAS || (numJugadores >= MIN_JUGADORES && Activos() <= 1);
+        public int Evento => evento;
+        // Cada día tiene 2 turnos: mañana y tarde
+        public const int DIAS = RONDAS / 2;
+        public int Dia => (ronda + 1) / 2;
+        public string NombreDia => dias[(Dia - 1) % dias.Length];
+        public string Momento => ronda % 2 == 1 ? "MAÑANA" : "TARDE";
+        public double FactorMercado => evento == BLACK_FRIDAY ? 0.70 : 1;
+
+        // La pantalla lo pone en false cuando ya enseñó el aviso del día
+        public bool DiaNuevo
+        {
+            get => diaNuevo;
+            set => diaNuevo = value;
+        }
 
         public Concesionario ObtenerJugador(int indice)
         {
@@ -116,23 +156,75 @@ namespace PrograProyectoFinal
         // Llega un cliente con el tipo de auto que busca y cuánto trae
         public Cliente NuevoCliente()
         {
-            int tipo = azar.Next(3);
+            yaVendio = false;
+            if (evento == NO_HAY_NADIE)
+            {
+                cliente = null;
+                return null;
+            }
+
+            int tipo = evento == HURACAN ? 2 : azar.Next(3);
             Auto referencia = BuscarAuto(tipo);
             // El presupuesto varía: entre 90 % y 140 % del precio de venta de un auto de ese tipo
             double presupuesto = referencia.PrecioVenta() * (0.9 + azar.NextDouble() * 0.5);
             if (JugadorActual.Vendedor == Concesionario.DONA)
                 presupuesto *= 1.10;      // clientela fiel
+            if (evento == HURACAN) presupuesto *= 1.20;
+            if (evento == NAVIDAD) presupuesto *= 1.15;
+            if (evento == HOT_SALE) presupuesto *= 1.25;
             presupuesto = Math.Round(presupuesto / 5000) * 5000;
 
             int retrato = azar.Next(nombresClientes.Length);
             string frase = frases[tipo, azar.Next(3)];
             cliente = new Cliente(nombresClientes[retrato], presupuesto, tipo, frase, retrato);
-            yaVendio = false;
+            // 1 de cada 3 lo quiere de un color: si no lo tienes, lo pintas
+            if (azar.Next(3) == 0)
+                cliente.ColorBuscado = azar.Next(Cliente.NombresColor.Length);
             return cliente;
+        }
+
+        // ----- Decisión: un señor te ofrece su coche -----
+        private static string[] senores = { "Don Goyo", "Doña Chela", "El Tío Beto", "Don Ramiro" };
+        private static string[,] cochesSenor =
+        {
+            { "Tsuru", "2005" }, { "Golf", "2009" }, { "Datsun", "1994" }, { "Pointer", "2007" },
+            { "Explorer", "2011" }, { "Cavalier", "2004" }, { "F-150", "2008" }, { "Platina", "2006" }
+        };
+
+        public Auto OfertaAuto { get; private set; }
+        public double OfertaPrecio { get; private set; }
+        public string OfertaSenor { get; private set; }
+
+        // 1 de cada 5 turnos llega un señor que quiere vender su coche barato
+        public bool HayOferta()
+        {
+            if (azar.Next(5) != 0) return false;
+            int c = azar.Next(cochesSenor.GetLength(0));
+            int tipo = azar.Next(3);
+            double valor = Math.Round((50000 + azar.Next(150000)) / 5000.0) * 5000;
+            OfertaAuto = new Auto("", cochesSenor[c, 0], int.Parse(cochesSenor[c, 1]), valor, tipo, azar.Next(8));
+            OfertaPrecio = Math.Round(valor * (0.5 + azar.NextDouble() * 0.2) / 1000) * 1000;
+            OfertaSenor = senores[azar.Next(senores.Length)];
+            return true;
+        }
+
+        // Después de vender, a veces llega de la nada un bro con cash
+        public bool TalVezLlegaBro()
+        {
+            if (cliente == null || azar.Next(100) >= 25)
+                return false;
+            cliente = new Cliente("El Bro", 9999999, -1, "¡Qué onda, carnal! Traigo cash. Véndeme lo que sea y te doy 25 % más.", 8, 1.25);
+            yaVendio = false;
+            return true;
         }
 
         public string Vender(int indice, out bool vendido)
         {
+            if (cliente == null)
+            {
+                vendido = false;
+                return "No hay nadie...";
+            }
             string respuesta = JugadorActual.Vender(indice, cliente, out vendido);
             if (vendido)
                 yaVendio = true;
@@ -140,14 +232,77 @@ namespace PrograProyectoFinal
         }
 
         // turno = (turno + 1) % n; cuando se da la vuelta empieza otra ronda
+        // Se salta a los que se rindieron. Cuando se da la vuelta empieza otro día.
         public void SiguienteTurno()
         {
             JugadorActual.FinDeTurno();
-            turno = (turno + 1) % numJugadores;
-            if (turno == 0)
-                ronda++;
+            do
+            {
+                turno = (turno + 1) % numJugadores;
+                if (turno == 0)
+                {
+                    ronda++;
+                    if (!Terminada && ronda % 2 == 1)
+                        IniciarDia();
+                }
+            } while (jugadores[turno].Rendido && !Terminada);
+
             if (!Terminada)
                 NuevoCliente();
+        }
+
+        // Sortea el evento del día (desde el día 2, 45 % de probabilidad, sin repetir el de ayer)
+        private void IniciarDia()
+        {
+            int anterior = evento;
+            evento = -1;
+            if (azar.Next(100) < 45)
+            {
+                do evento = azar.Next(NombresEvento.Length);
+                while (evento == anterior);
+            }
+            diaNuevo = true;
+
+            for (int i = 0; i < numJugadores; i++)
+            {
+                Concesionario j = jugadores[i];
+                if (j.Rendido) continue;
+                if (evento == NAVIDAD)
+                    j.Dinero += 30000;
+                if (evento == TERREMOTO && j.NumAutos > 0)
+                {
+                    Auto perdido = j.QuitarAuto(azar.Next(j.NumAutos));
+                    j.Noticia = $"El terremoto se tragó tu {perdido.Nombre}.";
+                }
+                if (evento == ZOMBIES)
+                    j.Noticia = j.PerderPorZombies(azar);
+            }
+        }
+
+        public int Activos()
+        {
+            int activos = 0;
+            for (int i = 0; i < numJugadores; i++)
+                if (!jugadores[i].Rendido)
+                    activos++;
+            return activos;
+        }
+
+        // El jugador en turno abandona (forfeit). Queda al final del ranking.
+        public void Rendirse()
+        {
+            JugadorActual.Rendido = true;
+            if (!Terminada)
+                SiguienteTurno();
+        }
+
+        // Misma gente con los mismos vendedores, todo de cero
+        public Partida Revancha()
+        {
+            Partida nueva = new Partida();
+            for (int i = 0; i < numJugadores; i++)
+                nueva.AgregarJugador(new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor));
+            return nueva;
         }
 
         // ----- Draft de cartas -----
@@ -196,6 +351,12 @@ namespace PrograProyectoFinal
             return true;
         }
 
+        // El que se rindió queda hasta abajo
+        private static double Puntos(Concesionario c)
+        {
+            return c.Rendido ? -1 : c.Patrimonio();
+        }
+
         // Ranking con el método de la burbuja, de mayor a menor patrimonio
         public Concesionario[] Ranking()
         {
@@ -207,7 +368,7 @@ namespace PrograProyectoFinal
             {
                 for (int j = 0; j < numJugadores - 1 - i; j++)
                 {
-                    if (orden[j].Patrimonio() < orden[j + 1].Patrimonio())
+                    if (Puntos(orden[j]) < Puntos(orden[j + 1]))
                     {
                         Concesionario temporal = orden[j];
                         orden[j] = orden[j + 1];

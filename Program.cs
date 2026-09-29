@@ -16,6 +16,7 @@ namespace PrograProyectoFinal
 
             // Imágenes y fuentes se cargan una sola vez
             Recursos.Cargar();
+            Recursos.Musica(Recursos.MusicaActiva);
 
             Application.Run(new FormTitulo());
         }

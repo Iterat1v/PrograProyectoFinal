@@ -6,6 +6,7 @@ namespace PrograProyectoFinal
         public const double PRESUPUESTO_INICIAL = 500000;
         public const int MAX_AUTOS = 10;
         public const int MAX_CARTAS = 3;
+        public const double PINTURA = 10000;   // pintar un auto del color que pide el cliente
 
         // Vendedores (cada uno con su ventaja)
         public const int LICENCIADO = 0;   // vende 5 % más caro
@@ -29,6 +30,7 @@ namespace PrograProyectoFinal
         private bool sobreprecio = false;    // +20 % en compras este turno
         private bool pierdeTurno = false;
         private string noticia = "";         // lo que le hicieron los rivales
+        private bool rendido = false;
 
         public Concesionario(string jugador, int vendedor)
         {
@@ -61,6 +63,7 @@ namespace PrograProyectoFinal
         public bool ErrorDeCuentas { get => errorDeCuentas; set => errorDeCuentas = value; }
         public bool Sobreprecio { get => sobreprecio; set => sobreprecio = value; }
         public bool PierdeTurno { get => pierdeTurno; set => pierdeTurno = value; }
+        public bool Rendido { get => rendido; set => rendido = value; }
 
         // Si ya había una noticia, la nueva se agrega
         public string Noticia
@@ -87,18 +90,19 @@ namespace PrograProyectoFinal
         }
 
         // Lo que le cuesta a ESTE jugador, con descuentos o sobreprecio
-        public double PrecioCompra(Auto auto)
+        // factorEvento: 0.7 en Black Friday, 1 en un día normal
+        public double PrecioCompra(Auto auto, double factorEvento = 1)
         {
-            double precio = auto.Precio * (1 - descuento);
+            double precio = auto.Precio * (1 - descuento) * factorEvento;
             if (sobreprecio)
                 precio *= 1.20;
             return Math.Round(precio / 1000) * 1000;
         }
 
         // Regresa un mensaje con lo que pasó; null si sí se pudo
-        public string Comprar(Auto auto)
+        public string Comprar(Auto auto, double factorEvento = 1)
         {
-            double precio = PrecioCompra(auto);
+            double precio = PrecioCompra(auto, factorEvento);
             if (!auto.Disponible)
                 return "Ese auto ya lo compró alguien más.";
             if (numAutos == MAX_AUTOS)
@@ -111,6 +115,33 @@ namespace PrograProyectoFinal
             auto.Disponible = false;
             descuento = 0;              // el descuento es solo para una compra
             return null;
+        }
+
+        // Compra fuera del mercado (el señor que vende su coche)
+        public string CompraDirecta(Auto auto, double precio)
+        {
+            if (numAutos == MAX_AUTOS)
+                return "Tu lote está lleno.";
+            if (precio > dinero)
+                return "No te alcanza.";
+            Dinero -= precio;
+            RecibirAuto(auto);
+            return null;
+        }
+
+        // Los zombies se llevan una carta; si no tiene, dinero
+        public string PerderPorZombies(Random azar)
+        {
+            if (numCartas > 0)
+            {
+                int i = azar.Next(numCartas);
+                string nombre = cartas[i].Nombre;
+                QuitarCarta(i);
+                return $"Los zombies se llevaron tu carta \"{nombre}\".";
+            }
+            double perdida = Math.Min(20000, dinero);
+            Dinero -= perdida;
+            return $"Los zombies se llevaron ${perdida:N0} de la caja.";
         }
 
         public void RecibirAuto(Auto auto)
@@ -136,10 +167,10 @@ namespace PrograProyectoFinal
         public string Vender(int indice, Cliente cliente, out bool vendido)
         {
             Auto auto = autos[indice];
-            double precio = PrecioVenta(auto);
+            double precio = Math.Round(PrecioVenta(auto) * cliente.FactorPago / 1000) * 1000;
             vendido = false;
 
-            if (!ventaSegura)
+            if (!ventaSegura && !cliente.AceptaCualquiera)
             {
                 if (auto.Tipo != cliente.TipoBuscado)
                     return $"Mmm no. Yo busco un {Recursos.Tipos[cliente.TipoBuscado].ToLower()}.";
@@ -147,8 +178,17 @@ namespace PrograProyectoFinal
                     return $"¡Muy caro! Nada más traigo ${cliente.Presupuesto:N0}.";
             }
 
-            Dinero += precio + bonoVenta;
-            string extra = bonoVenta > 0 ? $" +${bonoVenta:N0} de bono." : "";
+            // Si lo quiere de otro color, hay que pintarlo
+            double pintura = 0;
+            string extra = "";
+            if (cliente.ColorBuscado != -1 && auto.Color != cliente.ColorBuscado)
+            {
+                pintura = PINTURA;
+                extra = $" Lo pintaste de {Cliente.NombresColor[cliente.ColorBuscado]}: -${PINTURA:N0}.";
+            }
+
+            Dinero += precio + bonoVenta - pintura;
+            if (bonoVenta > 0) extra += $" +${bonoVenta:N0} de bono.";
             QuitarAuto(indice);
             bonoVenta = 0;
             errorDeCuentas = false;

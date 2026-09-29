@@ -7,14 +7,18 @@ namespace PrograProyectoFinal
 
         private Concesionario jugador;
         private Auto[] catalogo;
+        private double factor;      // 0.7 en Black Friday
         private int seleccionado = -1;
         private string aviso = "";
 
-        internal FormMercado(Concesionario jugador, Auto[] catalogo)
+        internal FormMercado(Partida partida)
         {
             InitializeComponent();
-            this.jugador = jugador;
-            this.catalogo = catalogo;
+            jugador = partida.JugadorActual;
+            catalogo = partida.Catalogo;
+            factor = partida.FactorMercado;
+            if (factor < 1)
+                Titulo = "MERCADO · ¡BLACK FRIDAY! 30 % MENOS";
             btnComprar.Colores(Paleta.Verde, Paleta.Verde2);
             btnCerrar.Colores(Paleta.Crema, Paleta.Crema2);
             btnComprar.Enabled = false;
@@ -49,7 +53,7 @@ namespace PrograProyectoFinal
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], c.X + 50, c.Y + 8, 3);
                 Pixel.Texto(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center);
                 if (auto.Disponible)
-                    Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
+                    Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto, factor)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
                 else
                     Pixel.Texto(g, "VENDIDO", c.X + 98, c.Y + 86, 9, Paleta.Rosa2, StringAlignment.Center);
             }
@@ -120,7 +124,7 @@ namespace PrograProyectoFinal
         private void Comprar()
         {
             if (seleccionado == -1) return;
-            string error = jugador.Comprar(catalogo[seleccionado]);
+            string error = jugador.Comprar(catalogo[seleccionado], factor);
             if (error != null)
             {
                 aviso = error;

@@ -17,6 +17,9 @@ namespace PrograProyectoFinal
 
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
+            btnMenu = new BotonPixel();
+            timerPasar = new System.Windows.Forms.Timer(components);
             btnMercado = new BotonPixel();
             btnVender = new BotonPixel();
             btnUsarCarta = new BotonPixel();
@@ -25,9 +28,24 @@ namespace PrograProyectoFinal
             btnSiguiente = new BotonPixel();
             SuspendLayout();
             //
+            // btnMenu
+            //
+            btnMenu.Location = new Point(12, 12);
+            btnMenu.Name = "btnMenu";
+            btnMenu.Size = new Size(100, 62);
+            btnMenu.TabIndex = 6;
+            btnMenu.TamLetra = 10F;
+            btnMenu.Text = "MENÚ";
+            btnMenu.Click += btnMenu_Click;
+            //
+            // timerPasar
+            //
+            timerPasar.Interval = 1400;
+            timerPasar.Tick += timerPasar_Tick;
+            //
             // btnMercado
             //
-            btnMercado.Location = new Point(290, 12);
+            btnMercado.Location = new Point(300, 12);
             btnMercado.Name = "btnMercado";
             btnMercado.Size = new Size(158, 62);
             btnMercado.TabIndex = 0;
@@ -85,6 +103,7 @@ namespace PrograProyectoFinal
             // FormTablero
             //
             ClientSize = new Size(1280, 720);
+            Controls.Add(btnMenu);
             Controls.Add(btnMercado);
             Controls.Add(btnVender);
             Controls.Add(btnUsarCarta);
@@ -97,6 +116,8 @@ namespace PrograProyectoFinal
 
         #endregion
 
+        private BotonPixel btnMenu;
+        private System.Windows.Forms.Timer timerPasar;
         private BotonPixel btnMercado;
         private BotonPixel btnVender;
         private BotonPixel btnUsarCarta;

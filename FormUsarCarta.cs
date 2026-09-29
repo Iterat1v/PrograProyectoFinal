@@ -119,8 +119,9 @@ namespace PrograProyectoFinal
 
             if (carta.NecesitaRival && rival == -1)
                 aviso = "Escoge a qué rival se la vas a aplicar.";
-            else if (carta.Efecto == Regateo.TOMA_MI_DINERO && carta is Regateo && partida.YaVendio)
-                aviso = "Ya vendiste en este turno. Guárdala para el siguiente cliente.";
+            else if (carta.Efecto == Regateo.TOMA_MI_DINERO && carta is Regateo && (partida.YaVendio || partida.ClienteActual == null))
+                aviso = partida.ClienteActual == null ? "Hoy no hay cliente. Guárdala para otro día."
+                                                      : "Ya vendiste en este turno. Guárdala para el siguiente cliente.";
             else
             {
                 Concesionario objetivo = carta.NecesitaRival ? rivales[rival] : null;

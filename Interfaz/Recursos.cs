@@ -12,7 +12,7 @@ namespace PrograProyectoFinal
         public static readonly string[] NombresVendedor = { "El Licenciado", "La Doña", "El Junior", "Don Chuy" };
 
         public static Image[] Vendedores = new Image[4];
-        public static Image[] Clientes = new Image[8];
+        public static Image[] Clientes = new Image[9];    // el 8 es El Bro
         public static Image[,] Autos = new Image[3, 8];   // [tipo, color]
         public static readonly string[] VentajasVendedor =
         {
@@ -25,8 +25,18 @@ namespace PrograProyectoFinal
         public static Image Moneda;
         public static Image[] Iconos = new Image[3];     // Regateo, Estafa, Aseguradora
 
-        private static string[] nombresSonidos = { "venta", "compra", "carta", "error", "turno", "estafa", "victoria" };
-        private static SoundPlayer[] sonidos = new SoundPlayer[7];
+        private static string[] nombresSonidos = { "venta", "compra", "carta", "error", "turno", "estafa", "victoria", "evento", "bro", "menu" };
+        private static SoundPlayer[] sonidos = new SoundPlayer[10];
+
+        // Opciones del menú
+        public static bool SonidosActivos = true;
+        public static bool MusicaActiva = true;
+        public static bool PasarAlVender = true;
+
+        // La música va por otro canal (MCI de Windows) para que los efectos no la corten
+        [DllImport("winmm.dll", CharSet = CharSet.Unicode)]
+        private static extern int mciSendString(string comando, System.Text.StringBuilder respuesta, int largo, IntPtr ventana);
+        private static bool musicaAbierta = false;
 
         private static PrivateFontCollection fuentes = new PrivateFontCollection();
         private static FontFamily jersey = FontFamily.GenericMonospace;
@@ -81,9 +91,27 @@ namespace PrograProyectoFinal
         // Toca un efecto: Recursos.Sonar("venta"). Play() no congela la pantalla.
         public static void Sonar(string nombre)
         {
+            if (!SonidosActivos) return;
             for (int i = 0; i < nombresSonidos.Length; i++)
                 if (nombresSonidos[i] == nombre && sonidos[i] != null)
                     sonidos[i].Play();
+        }
+
+        public static void Musica(bool tocar)
+        {
+            if (tocar)
+            {
+                if (!musicaAbierta)
+                {
+                    string archivo = Path.Combine(Application.StartupPath, "Assets", "Sonidos", "musica.wav");
+                    mciSendString($"open \"{archivo}\" type mpegvideo alias musica", null, 0, IntPtr.Zero);
+                    mciSendString("setaudio musica volume to 450", null, 0, IntPtr.Zero);
+                    musicaAbierta = true;
+                }
+                mciSendString("play musica repeat", null, 0, IntPtr.Zero);
+            }
+            else if (musicaAbierta)
+                mciSendString("pause musica", null, 0, IntPtr.Zero);
         }
 
         // Letra normal. "tam" es el mismo número que se usó en el mockup

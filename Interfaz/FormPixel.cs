@@ -40,6 +40,16 @@ namespace PrograProyectoFinal
             }
         }
 
+        // Regresa a la pantalla de título (que está escondida) y cierra esta
+        protected void VolverAlTitulo()
+        {
+            Form titulo = Application.OpenForms[0];
+            titulo.Location = Location;
+            titulo.Show();
+            navegando = true;
+            Close();
+        }
+
         // Si el jugador cierra la ventana (y no es un cambio de pantalla), se acaba el juego
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
