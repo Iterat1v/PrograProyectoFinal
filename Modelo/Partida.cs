@@ -17,6 +17,13 @@ namespace PrograProyectoFinal
         private Cliente cliente;
         private bool yaVendio = false;
 
+        // Draft: 16 cartas de la baraja en una cuadrícula de 4 x 4
+        private Baraja baraja = new Baraja();
+        private PowerUp[,] draft = new PowerUp[4, 4];
+        private int[,] duenoDraft = new int[4, 4];   // índice del jugador que la tomó, -1 = libre
+        private int rondaDraft = 0;                   // 0, 1, 2: cada jugador escoge 3
+        private int posicionDraft = 0;
+
         private static string[] nombresClientes =
             { "Don Beto", "Doña Lupe", "Kevin", "Sofi", "El Ingeniero", "Don Pancho", "La Güera", "El Profe" };
 
@@ -113,6 +120,8 @@ namespace PrograProyectoFinal
             Auto referencia = BuscarAuto(tipo);
             // El presupuesto varía: entre 90 % y 140 % del precio de venta de un auto de ese tipo
             double presupuesto = referencia.PrecioVenta() * (0.9 + azar.NextDouble() * 0.5);
+            if (JugadorActual.Vendedor == Concesionario.DONA)
+                presupuesto *= 1.10;      // clientela fiel
             presupuesto = Math.Round(presupuesto / 5000) * 5000;
 
             int retrato = azar.Next(nombresClientes.Length);
@@ -133,11 +142,58 @@ namespace PrograProyectoFinal
         // turno = (turno + 1) % n; cuando se da la vuelta empieza otra ronda
         public void SiguienteTurno()
         {
+            JugadorActual.FinDeTurno();
             turno = (turno + 1) % numJugadores;
             if (turno == 0)
                 ronda++;
             if (!Terminada)
                 NuevoCliente();
+        }
+
+        // ----- Draft de cartas -----
+
+        public void PrepararDraft()
+        {
+            baraja.Barajar();
+            for (int f = 0; f < 4; f++)
+                for (int c = 0; c < 4; c++)
+                {
+                    draft[f, c] = baraja.Sacar();
+                    duenoDraft[f, c] = -1;
+                }
+            rondaDraft = 0;
+            posicionDraft = 0;
+        }
+
+        public PowerUp CartaDraft(int fila, int columna) => draft[fila, columna];
+        public int DuenoDraft(int fila, int columna) => duenoDraft[fila, columna];
+        public int RondaDraft => rondaDraft + 1;
+        public bool DraftTerminado => rondaDraft == Concesionario.MAX_CARTAS;
+
+        // Orden en serpiente: 1-2-3-4, luego 4-3-2-1, luego 1-2-3-4.
+        // Así el último no se queda siempre con lo que sobra.
+        public int OrdenDraft(int posicion)
+        {
+            return rondaDraft % 2 == 0 ? posicion : numJugadores - 1 - posicion;
+        }
+
+        public int JugadorDraft => OrdenDraft(posicionDraft);
+        public int PosicionDraft => posicionDraft;
+
+        public bool EscogerCarta(int fila, int columna)
+        {
+            if (DraftTerminado || duenoDraft[fila, columna] != -1)
+                return false;
+
+            duenoDraft[fila, columna] = JugadorDraft;
+            jugadores[JugadorDraft].AgregarCarta(draft[fila, columna]);
+            posicionDraft++;
+            if (posicionDraft == numJugadores)
+            {
+                posicionDraft = 0;
+                rondaDraft++;
+            }
+            return true;
         }
 
         // Ranking con el método de la burbuja, de mayor a menor patrimonio

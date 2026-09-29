@@ -5,28 +5,36 @@ Los mockups de cómo se vería están en las imágenes que se mandaron al grupo 
 
 ## Etapa 2 · ya programado (rama `etapa2`)
 
-El juego ya corre de principio a fin con el diseño pixel de la presentación:
-Título → Registro (nombre + vendedor) → Tablero (10 rondas) → Podio. Además, "Cómo se juega" y el Mercado.
+El juego completo corre de principio a fin con el diseño pixel de la presentación:
+Título → Registro (nombre + vendedor) → Draft de cartas → Tablero (10 rondas) → Podio.
+Además: Cómo se juega, Las cartas (los 3 tipos y las 25) y el Mercado.
 
-- **Clases del diagrama:** `Partida`, `Concesionario`, `Auto` y `Cliente` en la carpeta `Modelo/`. Todo en arreglos:
-  `Concesionario[4]`, `Auto[30]` del catálogo, `Auto[10]` del lote.
-- **Algoritmos:** búsqueda lineal (`Partida.BuscarAuto`, nombre repetido en el registro), burbuja (`Partida.Ranking`)
-  y `turno = (turno + 1) % n`.
-- **Estilo:** `Interfaz/` tiene los colores (`Paleta`), las fuentes y sprites (`Recursos`), el dibujo pixel (`Pixel`),
-  el botón de juego (`BotonPixel`) y la base de todas las pantallas (`FormPixel`). Los sprites son los mismos de los
-  mockups, están en `Assets/Sprites` y se pueden cambiar por dibujos propios (mismo tamaño: personas 16×16, autos 32×16).
-- **Reglas de venta:** el cliente busca un tipo (sedán, compacto o pickup) y trae un presupuesto. Si el auto es de ese tipo
-  y le alcanza, lo compra a 30 % más de lo que costó. Una venta por turno.
+**Clases (carpeta `Modelo/`)**, igual que el diagrama UML:
 
-### Para el de las cartas
+- `Partida`: jugadores `Concesionario[4]`, catálogo `Auto[30]`, ronda, turno, cliente y el draft `PowerUp[4,4]`.
+- `Concesionario`: el jugador, su dinero, su lote `Auto[10]` y sus cartas `PowerUp[3]`.
+- `Auto`, `Cliente`.
+- `PowerUp` (abstracta) y sus hijas `Regateo`, `Estafa` y `Aseguradora`, que sobreescriben `Aplicar()` (herencia y polimorfismo).
+- `Baraja`: las 25 cartas en un arreglo, revueltas con Fisher-Yates.
 
-Lo de las cartas no se tocó, se deja listo para conectarlo:
+**Algoritmos:** búsqueda lineal (`Partida.BuscarAuto`, `Concesionario.Defender`, nombre repetido en el registro),
+burbuja (`Partida.Ranking`), Fisher-Yates (`Baraja.Barajar`), `turno = (turno + 1) % n` y el draft en serpiente.
 
-- `FormRegistro.btnJugar_Click`: ahí va `IrA(new FormDraft(partida))` en vez de ir directo al tablero.
-  El `FormDraft` de Samu sigue en el proyecto; le falta recibir la `Partida` en lugar de `List<string>`.
-- `Concesionario`: agregar `PowerUp[] cartas = new PowerUp[3]` (está el comentario).
-- `FormTablero.btnUsarCarta_Click`: ahí se aplica la carta. `OnPaint` dibuja las 3 cartas boca abajo de "MIS CARTAS".
-- Para dibujar una carta boca abajo ya existe `Pixel.CartaBocaAbajo(g, x, y, ancho, alto)`.
+**Estilo (carpeta `Interfaz/`):** colores (`Paleta`), fuentes, sprites y sonidos (`Recursos`), dibujo pixel (`Pixel`),
+botón de juego (`BotonPixel`) y la base de todas las pantallas (`FormPixel`). El arte está en `Assets/`
+(sprites de los mockups, fuentes Jersey 10 y Silkscreen, sonidos .wav) y se puede cambiar por dibujos propios del mismo tamaño.
+
+**Reglas que se programaron:**
+
+- Venta: el cliente busca un tipo (sedán, compacto o pickup) y trae un presupuesto. Si el auto es de ese tipo y le alcanza,
+  lo compra 30 % más caro de lo que costó. Una venta por turno.
+- Cartas: 25 en la baraja (10 Regateo, 8 Estafa, 7 Aseguradora), salen 16 y cada jugador escoge 3 en serpiente.
+  Las Aseguradoras no se usan con el botón: se activan solas cuando alguien te lanza una Estafa.
+- Vendedores: Licenciado vende 5 % más caro, La Doña tiene clientes con 10 % más dinero, Junior empieza con $20,000 extra
+  y a Don Chuy sus autos le valen 10 % más al final.
+
+**Lo que investigamos (no se vio en clase):** `Dictionary` (caché de fuentes), `PrivateFontCollection`, `SoundPlayer`,
+`Timer` para la animación de voltear carta, `DllImport` para que el TextBox use la fuente pixel.
 
 ## Etapa 2 · 11 oct · Que el juego fluya (notas originales)
 

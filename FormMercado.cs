@@ -49,7 +49,7 @@ namespace PrograProyectoFinal
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], c.X + 50, c.Y + 8, 3);
                 Pixel.Texto(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center);
                 if (auto.Disponible)
-                    Pixel.Texto(g, Pixel.Dinero(auto.Precio), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
+                    Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
                 else
                     Pixel.Texto(g, "VENDIDO", c.X + 98, c.Y + 86, 9, Paleta.Rosa2, StringAlignment.Center);
             }
@@ -60,8 +60,12 @@ namespace PrograProyectoFinal
             else if (seleccionado != -1)
             {
                 Auto auto = catalogo[seleccionado];
-                Pixel.Texto(g, $"{auto.Nombre} · {auto.NombreTipo} · lo vendes en {Pixel.Dinero(auto.PrecioVenta())}", 40, 692, 11, Paleta.Crema);
+                Pixel.Texto(g, $"{auto.Nombre} · {auto.NombreTipo} · lo vendes en {Pixel.Dinero(jugador.PrecioVenta(auto))}", 40, 692, 11, Paleta.Crema);
             }
+            else if (jugador.Sobreprecio)
+                Pixel.Texto(g, "¡Te manipularon el mercado! Todo está 20 % más caro este turno.", 40, 692, 11, Paleta.Rosa);
+            else if (jugador.Descuento > 0)
+                Pixel.Texto(g, $"Tienes {jugador.Descuento * 100:0} % de descuento en esta compra (ya aplicado).", 40, 692, 11, Paleta.Agua);
             else
                 Pixel.Texto(g, "Escoge un auto. Lo vendes 30 % más caro de lo que te costó.", 40, 692, 11, Paleta.Tenue);
         }
@@ -118,9 +122,13 @@ namespace PrograProyectoFinal
             if (seleccionado == -1) return;
             string error = jugador.Comprar(catalogo[seleccionado]);
             if (error != null)
+            {
                 aviso = error;
+                Recursos.Sonar("error");
+            }
             else
             {
+                Recursos.Sonar("compra");
                 aviso = "";
                 seleccionado = -1;
                 btnComprar.Enabled = false;

@@ -1,6 +1,6 @@
 namespace PrograProyectoFinal
 {
-    partial class FormReglas
+    partial class FormCartas
     {
         private System.ComponentModel.IContainer components = null;
 
@@ -17,44 +17,43 @@ namespace PrograProyectoFinal
 
         private void InitializeComponent()
         {
+            btnLista = new BotonPixel();
             btnVolver = new BotonPixel();
-            btnCartas = new BotonPixel();
             SuspendLayout();
             //
-            // btnCartas
+            // btnLista
             //
-            btnCartas.Location = new Point(720, 612);
-            btnCartas.Name = "btnCartas";
-            btnCartas.Size = new Size(264, 82);
-            btnCartas.TabIndex = 1;
-            btnCartas.Text = "VER LAS CARTAS";
-            btnCartas.Click += btnCartas_Click;
+            btnLista.Location = new Point(720, 628);
+            btnLista.Name = "btnLista";
+            btnLista.Size = new Size(260, 76);
+            btnLista.TabIndex = 0;
+            btnLista.Text = "VER LAS 25";
+            btnLista.Click += btnLista_Click;
             //
             // btnVolver
             //
-            btnVolver.Location = new Point(1000, 612);
+            btnVolver.Location = new Point(1000, 628);
             btnVolver.Name = "btnVolver";
-            btnVolver.Size = new Size(244, 82);
-            btnVolver.TabIndex = 0;
+            btnVolver.Size = new Size(244, 76);
+            btnVolver.TabIndex = 1;
             btnVolver.Text = "VOLVER";
             btnVolver.Click += btnVolver_Click;
             //
-            // FormReglas
+            // FormCartas
             //
-            AcceptButton = btnVolver;
             CancelButton = btnVolver;
             ClientSize = new Size(1280, 720);
+            Controls.Add(btnLista);
             Controls.Add(btnVolver);
-            Controls.Add(btnCartas);
-            Name = "FormReglas";
+            Name = "FormCartas";
             StartPosition = FormStartPosition.CenterParent;
-            Titulo = "CÓMO SE JUEGA";
+            Titulo = "LAS CARTAS · 25 EN LA BARAJA";
             ResumeLayout(false);
         }
 
         #endregion
 
+        private BotonPixel btnLista;
         private BotonPixel btnVolver;
-        private BotonPixel btnCartas;
     }
 }

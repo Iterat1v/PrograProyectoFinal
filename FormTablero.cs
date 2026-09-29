@@ -29,7 +29,11 @@ namespace PrograProyectoFinal
         {
             seleccionado = -1;
             pagina = 0;
-            dialogo = partida.ClienteActual.Saludo;
+            if (partida.JugadorActual.PierdeTurno)
+                dialogo = "¡¿Por qué tan caro?! Mejor me voy a otro lado...";
+            else
+                dialogo = partida.ClienteActual.Saludo;
+            Recursos.Sonar(partida.JugadorActual.Noticia != "" ? "estafa" : "turno");
             Actualizar();
         }
 
@@ -42,7 +46,10 @@ namespace PrograProyectoFinal
             btnSiguiente.Visible = jugador.NumAutos > FILAS;
             btnAnterior.Enabled = pagina > 0;
             btnSiguiente.Enabled = pagina < paginas - 1;
-            btnVender.Enabled = !partida.YaVendio;
+            bool castigado = jugador.PierdeTurno;
+            btnVender.Enabled = !partida.YaVendio && !castigado;
+            btnMercado.Enabled = !castigado;
+            btnUsarCarta.Enabled = !castigado && jugador.NumCartas > 0;
             Invalidate();
         }
 
@@ -97,13 +104,15 @@ namespace PrograProyectoFinal
                 Pixel.R(g, f.X, f.Y, f.Width, f.Height, Paleta.LilaClaro);
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], f.X + 8, f.Y + 18, 4);
                 Pixel.Texto(g, auto.Nombre, f.X + 148, f.Y + 34, 12, Paleta.Noche);
-                Pixel.Texto(g, Pixel.Dinero(auto.PrecioVenta()), f.X + 148, f.Y + 70, 12, Paleta.Verde2);
+                Pixel.Texto(g, Pixel.Dinero(jugador.PrecioVenta(auto)), f.X + 148, f.Y + 70, 12, Paleta.Verde2);
             }
 
             Pixel.Texto(g, "MIS CARTAS", 44, 524, 12, Paleta.Morado2);
-            // Aquí se dibujan las cartas del jugador (las pone el equipo de las cartas)
-            for (int c = 0; c < 3; c++)
+            // Boca abajo para que los rivales no las vean; se ven al darle USAR CARTA
+            for (int c = 0; c < jugador.NumCartas; c++)
                 Pixel.CartaBocaAbajo(g, 44 + c * 88, 544, 80, 60);
+            if (jugador.NumCartas == 0)
+                Pixel.Texto(g, "sin cartas", 44, 574, 11, Paleta.Gris);
 
             // ----- showroom con el cliente -----
             Pixel.R(g, 420, 104, 500, 380, Paleta.Showroom);
@@ -115,8 +124,15 @@ namespace PrograProyectoFinal
             Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480, 200, 11);
             Pixel.Texto(g, cliente.Nombre, 568, 452, 13, Paleta.Crema, StringAlignment.Center);
 
-            Pixel.Globo(g, 688, 140, 216, 192);
-            DibujarDialogo(g, new Rectangle(712, 158, 180, 166));
+            // Noticia: lo que le hicieron los rivales
+            if (jugador.Noticia != "")
+            {
+                Pixel.R(g, 428, 118, 484, 48, Paleta.Rosa);
+                Pixel.Parrafo(g, jugador.Noticia, new Rectangle(440, 122, 464, 44), 10, Paleta.Noche);
+            }
+
+            Pixel.Globo(g, 688, 176, 216, 192);
+            DibujarDialogo(g, new Rectangle(712, 194, 180, 166));
 
             // ----- ranking -----
             Pixel.Panel(g, 940, 104, 320, 512, Paleta.Crema);
@@ -160,6 +176,9 @@ namespace PrograProyectoFinal
                     Invalidate();
                 }
             }
+            // Clic en las cartas chiquitas = USAR CARTA
+            if (btnUsarCarta.Enabled && new Rectangle(44, 544, 264, 60).Contains(e.Location))
+                btnUsarCarta_Click(this, EventArgs.Empty);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -177,28 +196,36 @@ namespace PrograProyectoFinal
             if (seleccionado == -1)
             {
                 dialogo = "¿Qué me enseñas? Escoge un auto de tu lote.";
+                Recursos.Sonar("error");
             }
             else
             {
                 dialogo = partida.Vender(seleccionado, out bool vendido);
                 if (vendido)
                     seleccionado = -1;
+                Recursos.Sonar(vendido ? "venta" : "error");
             }
             Actualizar();
         }
 
         private void btnUsarCarta_Click(object sender, EventArgs e)
         {
-            // Lo conecta el equipo de las cartas
-            dialogo = "Las ABILICARDS llegan en la siguiente versión.";
-            Invalidate();
+            using (FormUsarCarta cartas = new FormUsarCarta(partida))
+            {
+                if (cartas.ShowDialog(this) == DialogResult.OK)
+                    dialogo = cartas.Resultado;
+            }
+            Actualizar();
         }
 
         private void btnPasar_Click(object sender, EventArgs e)
         {
             partida.SiguienteTurno();
             if (partida.Terminada)
+            {
+                Recursos.Sonar("victoria");
                 IrA(new FormResultados(partida));
+            }
             else
                 NuevoTurno();
         }

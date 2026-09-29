@@ -1,4 +1,5 @@
 using System.Drawing.Text;
+using System.Media;
 using System.Runtime.InteropServices;
 
 namespace PrograProyectoFinal
@@ -13,7 +14,19 @@ namespace PrograProyectoFinal
         public static Image[] Vendedores = new Image[4];
         public static Image[] Clientes = new Image[8];
         public static Image[,] Autos = new Image[3, 8];   // [tipo, color]
+        public static readonly string[] VentajasVendedor =
+        {
+            "Negociador: vende 5 % más caro.",
+            "Clientela fiel: sus clientes traen 10 % más.",
+            "Herencia: empieza con $20,000 extra.",
+            "Mecánico: sus autos valen 10 % más al final."
+        };
+
         public static Image Moneda;
+        public static Image[] Iconos = new Image[3];     // Regateo, Estafa, Aseguradora
+
+        private static string[] nombresSonidos = { "venta", "compra", "carta", "error", "turno", "estafa", "victoria" };
+        private static SoundPlayer[] sonidos = new SoundPlayer[7];
 
         private static PrivateFontCollection fuentes = new PrivateFontCollection();
         private static FontFamily jersey = FontFamily.GenericMonospace;
@@ -42,6 +55,15 @@ namespace PrograProyectoFinal
                 for (int c = 0; c < 8; c++)
                     Autos[t, c] = Image.FromFile(Path.Combine(sprites, $"auto_{carpetaTipo[t]}{c}.png"));
             Moneda = Image.FromFile(Path.Combine(sprites, "moneda.png"));
+            string[] iconos = { "regateo", "estafa", "aseguradora" };
+            for (int i = 0; i < Iconos.Length; i++)
+                Iconos[i] = Image.FromFile(Path.Combine(sprites, $"icono_{iconos[i]}.png"));
+
+            for (int i = 0; i < sonidos.Length; i++)
+            {
+                sonidos[i] = new SoundPlayer(Path.Combine(assets, "Sonidos", $"{nombresSonidos[i]}.wav"));
+                sonidos[i].Load();
+            }
 
             string jerseyTtf = Path.Combine(assets, "Fuentes", "Jersey10-Regular.ttf");
             string silkTtf = Path.Combine(assets, "Fuentes", "Silkscreen-Bold.ttf");
@@ -54,6 +76,14 @@ namespace PrograProyectoFinal
                 if (familia.Name.StartsWith("Silkscreen")) silkscreen = familia;
             }
             Cargado = true;
+        }
+
+        // Toca un efecto: Recursos.Sonar("venta"). Play() no congela la pantalla.
+        public static void Sonar(string nombre)
+        {
+            for (int i = 0; i < nombresSonidos.Length; i++)
+                if (nombresSonidos[i] == nombre && sonidos[i] != null)
+                    sonidos[i].Play();
         }
 
         // Letra normal. "tam" es el mismo número que se usó en el mockup

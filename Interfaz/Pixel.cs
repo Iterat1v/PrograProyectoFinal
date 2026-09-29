@@ -144,6 +144,28 @@ namespace PrograProyectoFinal
             Texto(g, "?", x + w / 2, y + h / 2, h < 100 ? 14 : 22, Paleta.Oro, StringAlignment.Center);
         }
 
+        // Carta boca arriba chica (como en el draft): franja de color, ícono y dueño abajo
+        public static void Carta(Graphics g, int x, int y, int w, int h, PowerUp carta, string dueno)
+        {
+            Panel(g, x, y, w, h, Paleta.Crema);
+            R(g, x + 8, y + 8, w - 16, 24, carta.Color);
+            Texto(g, carta.Tipo, x + w / 2, y + 20, carta.Tipo.Length > 8 ? 7 : 9, Paleta.Noche, StringAlignment.Center);
+            Sprite(g, Recursos.Iconos[carta.Icono], x + w / 2 - 24, y + 40, 4);
+            if (dueno != null)
+                Texto(g, dueno, x + w / 2, y + h - 20, 10, Paleta.Morado2, StringAlignment.Center);
+        }
+
+        // Carta boca arriba grande: tipo, ícono, nombre y qué hace
+        public static void CartaGrande(Graphics g, int x, int y, int w, int h, PowerUp carta)
+        {
+            Panel(g, x, y, w, h, Paleta.Crema);
+            R(g, x + 8, y + 8, w - 16, 40, carta.Color);
+            Texto(g, carta.Tipo, x + w / 2, y + 28, 12, Paleta.Noche, StringAlignment.Center);
+            Sprite(g, Recursos.Iconos[carta.Icono], x + w / 2 - 48, y + 64, 8);
+            Parrafo(g, carta.Nombre.ToUpper(), new Rectangle(x + 16, y + 170, w - 32, 70), 12, Paleta.Noche, StringAlignment.Center);
+            Parrafo(g, carta.Descripcion, new Rectangle(x + 16, y + 238, w - 32, h - 250), 10, Paleta.Morado2, StringAlignment.Center);
+        }
+
         // Globo de diálogo con piquito a la izquierda
         public static void Globo(Graphics g, int x, int y, int w, int h)
         {

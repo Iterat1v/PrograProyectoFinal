@@ -40,6 +40,9 @@ namespace PrograProyectoFinal
             else
                 Pixel.Texto(g, "¡Ya están los 4! Denle a jugar", 1252, 96, 13, Paleta.Oro, StringAlignment.Far);
 
+            if (elegido != -1)
+                Pixel.Texto(g, Recursos.VentajasVendedor[elegido], 40, 96, 12, Paleta.Agua);
+
             for (int i = 0; i < 4; i++)
             {
                 Rectangle t = Tarjeta(i);
@@ -195,9 +198,7 @@ namespace PrograProyectoFinal
                 return;
             }
 
-            // Aquí iría el draft de cartas cuando esté listo:
-            // IrA(new FormDraft(partida));
-            IrA(new FormTablero(partida));
+            IrA(new FormDraft(partida));
         }
 
         private void txtNombre_KeyUp(object sender, KeyEventArgs e)
