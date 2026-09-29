@@ -22,13 +22,23 @@ namespace PrograProyectoFinal
             btnLimpiar = new BotonPixel();
             btnJugar = new BotonPixel();
             btnBot = new BotonPixel();
+            btnPersonaje = new BotonPixel();
             SuspendLayout();
+            //
+            // btnPersonaje
+            //
+            btnPersonaje.Location = new Point(348, 600);
+            btnPersonaje.Name = "btnPersonaje";
+            btnPersonaje.Size = new Size(240, 86);
+            btnPersonaje.TabIndex = 5;
+            btnPersonaje.Text = "PERSONAJE";
+            btnPersonaje.Click += btnPersonaje_Click;
             //
             // btnBot
             //
-            btnBot.Location = new Point(688, 600);
+            btnBot.Location = new Point(768, 600);
             btnBot.Name = "btnBot";
-            btnBot.Size = new Size(172, 86);
+            btnBot.Size = new Size(150, 86);
             btnBot.TabIndex = 4;
             btnBot.Text = "+ BOT";
             btnBot.Click += btnBot_Click;
@@ -49,25 +59,25 @@ namespace PrograProyectoFinal
             //
             btnAgregar.Location = new Point(40, 600);
             btnAgregar.Name = "btnAgregar";
-            btnAgregar.Size = new Size(364, 86);
+            btnAgregar.Size = new Size(296, 86);
             btnAgregar.TabIndex = 1;
-            btnAgregar.Text = "AGREGAR JUGADOR";
+            btnAgregar.Text = "AGREGAR";
             btnAgregar.Click += btnAgregar_Click;
             //
             // btnLimpiar
             //
-            btnLimpiar.Location = new Point(424, 600);
+            btnLimpiar.Location = new Point(604, 600);
             btnLimpiar.Name = "btnLimpiar";
-            btnLimpiar.Size = new Size(244, 86);
+            btnLimpiar.Size = new Size(150, 86);
             btnLimpiar.TabIndex = 2;
             btnLimpiar.Text = "LIMPIAR";
             btnLimpiar.Click += btnLimpiar_Click;
             //
             // btnJugar
             //
-            btnJugar.Location = new Point(880, 600);
+            btnJugar.Location = new Point(934, 600);
             btnJugar.Name = "btnJugar";
-            btnJugar.Size = new Size(364, 86);
+            btnJugar.Size = new Size(310, 86);
             btnJugar.TabIndex = 3;
             btnJugar.Text = "¡A JUGAR!";
             btnJugar.Click += btnJugar_Click;
@@ -81,6 +91,7 @@ namespace PrograProyectoFinal
             Controls.Add(btnLimpiar);
             Controls.Add(btnJugar);
             Controls.Add(btnBot);
+            Controls.Add(btnPersonaje);
             Name = "FormRegistro";
             Titulo = "¡BIENVENIDO! · ELIGE A TU VENDEDOR";
             ResumeLayout(false);
@@ -94,5 +105,6 @@ namespace PrograProyectoFinal
         private BotonPixel btnLimpiar;
         private BotonPixel btnJugar;
         private BotonPixel btnBot;
+        private BotonPixel btnPersonaje;
     }
 }

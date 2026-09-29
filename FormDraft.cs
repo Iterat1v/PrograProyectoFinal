@@ -107,7 +107,7 @@ namespace PrograProyectoFinal
                 bool actual = !partida.DraftTerminado && k == partida.PosicionDraft;
                 Pixel.R(g, x, 488, 88, 88, actual ? Paleta.Oro : Paleta.Morado2);
                 Pixel.R(g, x + 4, 492, 80, 80, Paleta.Morado2);
-                Pixel.Sprite(g, Recursos.Vendedores[partida.ObtenerJugador(j).Vendedor], x + 4, 492, 5);
+                Pixel.Sprite(g, Recursos.Cara(partida.ObtenerJugador(j)), x + 4, 492, 5);
                 if (k < n - 1)
                     Pixel.Texto(g, "›", x + 100, 530, 16, Paleta.Crema, StringAlignment.Center);
 

@@ -76,7 +76,7 @@ namespace PrograProyectoFinal
                         Pixel.R(g, r.X, r.Y, r.Width, r.Height, k == rival ? Paleta.OroClaro : Paleta.LilaClaro);
                         if (k == rival)
                             Pixel.R(g, r.X, r.Y, 6, r.Height, Paleta.Rosa);
-                        Pixel.Sprite(g, Recursos.Vendedores[rivales[k].Vendedor], r.X + 12, r.Y + 12, 3);
+                        Pixel.Sprite(g, Recursos.Cara(rivales[k]), r.X + 12, r.Y + 12, 3);
                         Pixel.Texto(g, rivales[k].Jugador, r.X + 76, r.Y + 22, 12, Paleta.Noche);
                         Pixel.Texto(g, $"{rivales[k].NumAutos} autos · {rivales[k].NumCartas} cartas", r.X + 76, r.Y + 52, 10, Paleta.Gris);
                     }

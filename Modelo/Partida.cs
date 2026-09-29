@@ -327,7 +327,12 @@ namespace PrograProyectoFinal
         {
             Partida nueva = new Partida();
             for (int i = 0; i < numJugadores; i++)
-                nueva.AgregarJugador(new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor, jugadores[i].EsBot));
+            {
+                Concesionario j = new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor, jugadores[i].NivelBot);
+                j.Perfil = jugadores[i].Perfil;
+                j.Cara = jugadores[i].Cara;
+                nueva.AgregarJugador(j);
+            }
             return nueva;
         }
 

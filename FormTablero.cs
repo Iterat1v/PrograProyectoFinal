@@ -171,7 +171,7 @@ namespace PrograProyectoFinal
             Pixel.Texto(g, $"DÍA {partida.Dia}/{Partida.DIAS}", 128, 28, 12, Paleta.Agua);
             Pixel.Texto(g, $"{partida.NombreDia} · {partida.Momento}", 128, 56, 9, Paleta.Tenue);
             Pixel.R(g, 464, 8, 64, 64, Paleta.Morado3);
-            Pixel.Sprite(g, Recursos.Vendedores[jugador.Vendedor], 464, 8, 4);
+            Pixel.Sprite(g, Recursos.Cara(jugador), 464, 8, 4);
             Pixel.Texto(g, $"Turno de {jugador.Jugador.ToUpper()}", 544, 40, 15, Paleta.Crema);
             Pixel.Sprite(g, Recursos.Moneda, 1000, 22, 6);
             Pixel.Texto(g, Pixel.Dinero(jugador.Dinero), 1048, 40, 17, Paleta.Oro);
@@ -248,14 +248,17 @@ namespace PrograProyectoFinal
                 Concesionario r = ranking[i];
                 Pixel.R(g, 960, y, 280, 88, r.Rendido ? Paleta.Crema2 : i == 0 ? Paleta.OroClaro : Paleta.LilaClaro);
                 Pixel.Texto(g, $"{i + 1}", 980, y + 44, 15, Paleta.Morado2);
-                Pixel.Sprite(g, Recursos.Vendedores[r.Vendedor], 1008, y + 12, 4);
+                Pixel.Sprite(g, Recursos.Cara(r), 1008, y + 12, 4);
                 Pixel.Texto(g, r.Jugador, 1084, y + 28, 12, r.Rendido ? Paleta.Gris : Paleta.Noche);
                 if (r.Rendido)
                     Pixel.Texto(g, "se rindió", 1084, y + 62, 11, Paleta.Rosa2);
                 else
                     Pixel.Texto(g, Pixel.DineroCorto(r.Patrimonio()), 1084, y + 62, 12, Paleta.Verde2);
                 if (r.EsBot)
-                    Pixel.Texto(g, "BOT", 1230, y + 20, 9, Paleta.Lila, StringAlignment.Far);
+                {
+                    string[] etiqueta = { "", "BOTARDO", "MEDIO", "PRO", "DIOS" };
+                    Pixel.Texto(g, etiqueta[r.NivelBot], 1232, y + 76, 7, r.NivelBot == 4 ? Paleta.Oro2 : Paleta.Lila, StringAlignment.Far);
+                }
             }
             DibujarFlotante(g);
         }
@@ -413,6 +416,11 @@ namespace PrograProyectoFinal
                     if (bot.PierdeTurno)
                     {
                         dialogo = $"{quien} perdió el turno: su cliente se fue.";
+                        pasoBot = 3;
+                    }
+                    else if (Bot.SeDistrajo(partida))
+                    {
+                        dialogo = $"{quien} se quedó viendo TikTok y no hizo nada.";
                         pasoBot = 3;
                     }
                     else

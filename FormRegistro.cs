@@ -19,6 +19,7 @@ namespace PrograProyectoFinal
             btnLimpiar.Colores(Paleta.Crema, Paleta.Crema2);
             btnJugar.Colores(Paleta.Verde, Paleta.Verde2);
             btnBot.Colores(Paleta.Lila, Paleta.Morado3);
+            btnPersonaje.Colores(Paleta.Oro, Paleta.Oro2);
             ElegirPrimeroLibre();
             ActualizarBotones();
         }
@@ -65,7 +66,16 @@ namespace PrograProyectoFinal
             // caja del nombre (el TextBox va encima)
             Pixel.Panel(g, 40, 452, 760, 112, Paleta.Crema);
             Pixel.Texto(g, "Tu nombre:", 68, 488, 12, Paleta.Morado2);
-            Pixel.Texto(g, $"{txtNombre.Text.Length} / {MAX_CARACTERES}", 776, 532, 11, Paleta.Gris, StringAlignment.Far);
+            Pixel.Texto(g, $"{txtNombre.Text.Length} / {MAX_CARACTERES}", 690, 532, 11, Paleta.Gris, StringAlignment.Far);
+
+            // Si ese nombre ya jugó antes, se ve su personaje y su nivel
+            Perfil guardado = txtNombre.Text.Trim() == "" ? null : Perfiles.Buscar(txtNombre.Text.Trim());
+            if (guardado != null)
+            {
+                Pixel.R(g, 710, 466, 76, 76, Paleta.Morado3);
+                Pixel.Sprite(g, guardado.Personalizado ? guardado.Avatar.Dibujar() : Recursos.Vendedores[Math.Max(elegido, 0)], 716, 472, 4);
+                Pixel.Texto(g, $"Nivel {guardado.Nivel}", 690, 488, 10, Paleta.Morado2, StringAlignment.Far);
+            }
 
             // quiénes ya están en la partida
             Pixel.Texto(g, "En la partida:", 832, 472, 12, Paleta.Tenue);
@@ -75,7 +85,7 @@ namespace PrograProyectoFinal
                 int x = 832 + (k % 2) * 208;
                 int y = 494 + (k / 2) * 50;
                 Pixel.R(g, x, y, 44, 44, Paleta.Morado2);
-                Pixel.Sprite(g, Recursos.Vendedores[j.Vendedor], x + 6, y + 6, 2);
+                Pixel.Sprite(g, Recursos.Cara(j), x + 6, y + 6, 2);
                 Pixel.Texto(g, j.Jugador, x + 54, y + 22, 12, Paleta.Crema);
             }
         }
@@ -135,7 +145,11 @@ namespace PrograProyectoFinal
                 aviso = "Escoge a tu vendedor";
             else
             {
-                partida.AgregarJugador(new Concesionario(nombre, elegido));
+                Concesionario nuevo = new Concesionario(nombre, elegido);
+                nuevo.Perfil = Perfiles.ObtenerOCrear(nombre);
+                if (nuevo.Perfil != null && nuevo.Perfil.Personalizado)
+                    nuevo.Cara = nuevo.Perfil.Avatar.Dibujar();
+                partida.AgregarJugador(nuevo);
                 duenos[elegido] = nombre;
                 txtNombre.Text = "";
                 aviso = "";
@@ -160,16 +174,41 @@ namespace PrograProyectoFinal
             if (elegido == -1)
                 ElegirPrimeroLibre();
 
-            string nombre = "";
-            for (int i = 0; i < Bot.Nombres.Length && nombre == ""; i++)
-                if (!NombreRepetido(Bot.Nombres[i]))
-                    nombre = Bot.Nombres[i];
+            int nivel;
+            using (FormNivelBot niveles = new FormNivelBot())
+            {
+                if (niveles.ShowDialog(this) != DialogResult.OK) return;
+                nivel = niveles.Nivel;
+            }
 
-            partida.AgregarJugador(new Concesionario(nombre, elegido, true));
+            string nombre = "";
+            for (int i = 0; i < Bot.Nombres[nivel].Length && nombre == ""; i++)
+                if (!NombreRepetido(Bot.Nombres[nivel][i]))
+                    nombre = Bot.Nombres[nivel][i];
+
+            partida.AgregarJugador(new Concesionario(nombre, elegido, nivel));
             duenos[elegido] = nombre;
             aviso = "";
             ElegirPrimeroLibre();
             ActualizarBotones();
+            Invalidate();
+            txtNombre.Focus();
+        }
+
+        // Abre la tienda del personaje del nombre que está escrito
+        private void btnPersonaje_Click(object sender, EventArgs e)
+        {
+            string nombre = txtNombre.Text.Trim();
+            if (nombre == "")
+            {
+                aviso = "Escribe tu nombre para abrir tu personaje";
+                Invalidate();
+                txtNombre.Focus();
+                return;
+            }
+            Perfil perfil = Perfiles.ObtenerOCrear(nombre);
+            using (FormPersonaje personaje = new FormPersonaje(perfil))
+                personaje.ShowDialog(this);
             Invalidate();
             txtNombre.Focus();
         }

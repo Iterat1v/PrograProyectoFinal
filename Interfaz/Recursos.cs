@@ -88,6 +88,14 @@ namespace PrograProyectoFinal
             Cargado = true;
         }
 
+        // La cara que se dibuja: su personaje, El Bro (bot Dios) o el vendedor
+        public static Image Cara(Concesionario c)
+        {
+            if (c.Cara != null) return c.Cara;
+            if (c.NivelBot == 4) return Clientes[8];
+            return Vendedores[c.Vendedor];
+        }
+
         // Toca un efecto: Recursos.Sonar("venta"). Play() no congela la pantalla.
         public static void Sonar(string nombre)
         {

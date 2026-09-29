@@ -55,12 +55,9 @@ namespace PrograProyectoFinal
         public const int ACEPTA = 0;
         public const int CONTRAOFERTA = 1;
 
-        // El jugador pide un precio y el cliente decide.
-        // Si no acepta, "contraoferta" es lo máximo que daría.
-        public int Evaluar(Auto auto, double precio, bool licenciado, bool ventaSegura, Random azar,
-                           out string respuesta, out double contraoferta)
+        // Lo máximo que pagaría por ese auto (el bot nivel Dios lo "adivina")
+        public double Limite(Auto auto, bool licenciado, bool ventaSegura)
         {
-            bool otroTipo = !AceptaCualquiera && auto.Tipo != tipoBuscado;
             double limite;
             if (AceptaCualquiera || ventaSegura)
                 limite = auto.Precio * 1.6;                 // El Bro o "¡¡Toma mi dinero!!"
@@ -68,9 +65,18 @@ namespace PrograProyectoFinal
             {
                 limite = presupuesto;
                 if (licenciado) limite *= 1.05;             // el Licenciado convence mejor
-                if (otroTipo) limite *= 0.60;               // no es lo que busca: solo si está muy barato
+                if (auto.Tipo != tipoBuscado) limite *= 0.60;   // no es lo que busca: solo muy barato
             }
-            limite = Math.Floor(limite / 1000) * 1000;
+            return Math.Floor(limite / 1000) * 1000;
+        }
+
+        // El jugador pide un precio y el cliente decide.
+        // Si no acepta, "contraoferta" es lo máximo que daría.
+        public int Evaluar(Auto auto, double precio, bool licenciado, bool ventaSegura, Random azar,
+                           out string respuesta, out double contraoferta)
+        {
+            bool otroTipo = !AceptaCualquiera && auto.Tipo != tipoBuscado;
+            double limite = Limite(auto, licenciado, ventaSegura);
             contraoferta = limite;
 
             if (precio <= limite)

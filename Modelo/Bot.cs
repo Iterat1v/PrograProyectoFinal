@@ -1,13 +1,25 @@
 namespace PrograProyectoFinal
 {
-    // La "inteligencia" del bot: decide qué comprar, a qué precio vender
-    // y a quién lanzarle una Estafa. Cada método regresa lo que hizo (o null).
+    // La "inteligencia" del bot, por niveles:
+    // 1 BOTARDO (se distrae y regatea mal), 2 MEDIO, 3 PRO y
+    // 4 SSJ ULTRA INSTINTO FASE DIOS 1000: El Bro, que sabe cuánto trae cada cliente.
     internal static class Bot
     {
-        public static readonly string[] Nombres = { "Bot Rulo", "Bot Chayo", "Bot Neto", "Bot Pepa" };
-        private const double RESERVA = 30000;     // dinero que siempre se guarda
+        public const int BOTARDO = 1, MEDIO = 2, PRO = 3, DIOS = 4;
 
-        // Draft: escoge una casilla libre al azar
+        public static readonly string[] NombresNivel = { "", "BOTARDO", "MEDIO", "PRO", "SSJ DIOS 1000" };
+        public static readonly string[][] Nombres =
+        {
+            new string[0],
+            new[] { "Botardo", "Botardín", "Botardito", "Botardazo" },
+            new[] { "Bot Chayo", "Bot Rulo", "Bot Pepa", "Bot Neto" },
+            new[] { "Pro Tiburón", "Pro Galán", "Pro Max", "Pro Lobo" },
+            new[] { "EL BRO", "EL BRO 2", "EL BRO 3", "EL BRO 4" }
+        };
+
+        private static double Reserva(int nivel) => nivel == BOTARDO ? 0 : 30000;
+
+        // Draft: el Dios prefiere Estafas y Regateos; los demás, al azar
         public static void EscogerDraft(Partida partida, out int fila, out int columna)
         {
             do
@@ -31,16 +43,37 @@ namespace PrograProyectoFinal
             return lider;
         }
 
+        private static Concesionario RivalAlAzar(Partida partida, Concesionario bot)
+        {
+            Concesionario rival;
+            do rival = partida.ObtenerJugador(partida.Azar.Next(partida.NumJugadores));
+            while (rival == bot);
+            return rival;
+        }
+
+        // El botardo a veces no hace nada
+        public static bool SeDistrajo(Partida partida)
+        {
+            return partida.JugadorActual.NivelBot == BOTARDO && partida.Azar.Next(100) < 30;
+        }
+
         public static string UsarCarta(Partida partida)
         {
             Concesionario bot = partida.JugadorActual;
+            int nivel = bot.NivelBot;
             for (int i = 0; i < bot.NumCartas; i++)
             {
                 PowerUp carta = bot.ObtenerCarta(i);
                 bool conviene = false;
                 Concesionario rival = null;
 
-                if (carta is Regateo)
+                if (nivel == BOTARDO)
+                {
+                    // usa lo que sea, cuando sea
+                    conviene = !(carta is Aseguradora) && partida.Azar.Next(100) < 35;
+                    if (carta.NecesitaRival) rival = RivalAlAzar(partida, bot);
+                }
+                else if (carta is Regateo)
                 {
                     switch (carta.Efecto)
                     {
@@ -58,10 +91,11 @@ namespace PrograProyectoFinal
                             conviene = partida.ClienteActual != null && !partida.YaVendio && bot.NumAutos > 0; break;
                     }
                 }
-                else if (carta is Estafa && partida.Azar.Next(100) < 45)
+                else if (carta is Estafa)
                 {
-                    rival = Lider(partida, bot);
-                    conviene = rival != null;
+                    int ganas = nivel == DIOS ? 100 : nivel == PRO ? 50 : 30;
+                    rival = nivel == MEDIO ? RivalAlAzar(partida, bot) : Lider(partida, bot);
+                    conviene = rival != null && partida.Azar.Next(100) < ganas;
                 }
 
                 if (!conviene) continue;
@@ -78,32 +112,46 @@ namespace PrograProyectoFinal
         public static bool AceptaOferta(Partida partida)
         {
             Concesionario bot = partida.JugadorActual;
-            return partida.OfertaPrecio <= partida.OfertaAuto.Precio * 0.65 &&
-                   bot.Dinero - partida.OfertaPrecio > RESERVA && bot.NumAutos < 8;
+            double tope = bot.NivelBot == DIOS ? 0.80 : bot.NivelBot == BOTARDO ? 1.2 : 0.65;
+            return partida.OfertaPrecio <= partida.OfertaAuto.Precio * tope &&
+                   bot.Dinero - partida.OfertaPrecio >= Reserva(bot.NivelBot) && bot.NumAutos < 8;
         }
 
-        // Compra hasta 2 autos: primero del tipo que busca el cliente, luego de los que no tenga
+        // Compra autos: el botardo al azar, los demás buscan el tipo que les falta
         public static string Comprar(Partida partida)
         {
             Concesionario bot = partida.JugadorActual;
+            int nivel = bot.NivelBot;
+            int cuantos = nivel == BOTARDO ? 1 : nivel == MEDIO ? 1 : 2;
+            int lote = nivel == DIOS ? 6 : 5;
             string compras = "";
-            for (int k = 0; k < 2 && bot.NumAutos < 5; k++)
-            {
-                int tipo = partida.ClienteActual != null && !partida.ClienteActual.AceptaCualquiera && k == 0
-                    ? partida.ClienteActual.TipoBuscado
-                    : TipoQueFalta(bot, partida.Azar);
 
-                // Búsqueda lineal del más barato de ese tipo que le alcance
-                Auto mejor = null;
-                foreach (Auto auto in partida.Catalogo)
+            for (int k = 0; k < cuantos && bot.NumAutos < lote; k++)
+            {
+                Auto elegido = null;
+                if (nivel == BOTARDO)
                 {
-                    double precio = bot.PrecioCompra(auto, partida.FactorMercado);
-                    if (auto.Disponible && auto.Tipo == tipo && precio <= bot.Dinero - RESERVA &&
-                        (mejor == null || auto.Precio < mejor.Precio))
-                        mejor = auto;
+                    Auto auto = partida.Catalogo[partida.Azar.Next(partida.Catalogo.Length)];
+                    if (auto.Disponible && bot.PrecioCompra(auto, partida.FactorMercado) <= bot.Dinero)
+                        elegido = auto;
                 }
-                if (mejor != null && bot.Comprar(mejor, partida.FactorMercado) == null)
-                    compras += compras == "" ? mejor.Nombre : $" y {mejor.Nombre}";
+                else
+                {
+                    int tipo = partida.ClienteActual != null && !partida.ClienteActual.AceptaCualquiera && k == 0
+                        ? partida.ClienteActual.TipoBuscado
+                        : TipoQueFalta(bot, partida.Azar);
+
+                    // Búsqueda lineal del más barato de ese tipo que le alcance
+                    foreach (Auto auto in partida.Catalogo)
+                    {
+                        double precio = bot.PrecioCompra(auto, partida.FactorMercado);
+                        if (auto.Disponible && auto.Tipo == tipo && precio <= bot.Dinero - Reserva(nivel) &&
+                            (elegido == null || auto.Precio < elegido.Precio))
+                            elegido = auto;
+                    }
+                }
+                if (elegido != null && bot.Comprar(elegido, partida.FactorMercado) == null)
+                    compras += compras == "" ? elegido.Nombre : $" y {elegido.Nombre}";
             }
             return compras == "" ? null : $"compró {compras}.";
         }
@@ -120,7 +168,6 @@ namespace PrograProyectoFinal
             return menor;
         }
 
-        // Regatea: pide el precio de lista y, si le contraofertan algo que deje ganancia, lo acepta
         public static string Vender(Partida partida, out double recibido)
         {
             recibido = 0;
@@ -129,25 +176,66 @@ namespace PrograProyectoFinal
             if (cliente == null || partida.YaVendio || bot.NumAutos == 0)
                 return null;
 
-            // Búsqueda lineal del auto que busca el cliente
+            if (bot.NivelBot == DIOS)
+                return VenderDios(partida, out recibido);
+
+            // Búsqueda lineal del auto que busca el cliente (el botardo agarra el primero)
             int indice = -1;
             for (int i = 0; i < bot.NumAutos && indice == -1; i++)
-                if (cliente.AceptaCualquiera || bot.VentaSegura || bot.ObtenerAuto(i).Tipo == cliente.TipoBuscado)
+                if (bot.NivelBot == BOTARDO || cliente.AceptaCualquiera || bot.VentaSegura || bot.ObtenerAuto(i).Tipo == cliente.TipoBuscado)
                     indice = i;
             if (indice == -1)
                 return "no tenía lo que buscaba el cliente.";
 
             Auto auto = bot.ObtenerAuto(indice);
-            double pedido = cliente.AceptaCualquiera || bot.VentaSegura ? auto.Precio * 1.5 : bot.PrecioVenta(auto);
             string nombre = auto.Nombre;
+            double pedido;
+            if (cliente.AceptaCualquiera || bot.VentaSegura) pedido = auto.Precio * 1.5;
+            else if (bot.NivelBot == BOTARDO) pedido = bot.PrecioVenta(auto) * (1.0 + partida.Azar.NextDouble() * 0.8);
+            else if (bot.NivelBot == PRO) pedido = bot.PrecioVenta(auto) * 1.25;    // el Pro pide alto y luego baja
+            else pedido = bot.PrecioVenta(auto);
+            pedido = Math.Round(pedido / 1000) * 1000;
+
             for (int intento = 0; intento < Partida.MAX_INTENTOS; intento++)
             {
                 if (partida.OfrecerPrecio(indice, pedido, out string respuesta, out double contra, out recibido))
                     return $"vendió el {nombre} en ${pedido:N0}.";
-                if (partida.YaVendio || contra < auto.Precio * 1.05)
+                bool acepta = bot.NivelBot == BOTARDO ? partida.Azar.Next(2) == 0 : contra >= auto.Precio * 1.05;
+                if (partida.YaVendio || !acepta)
                     return $"no se puso de acuerdo con el cliente por el {nombre}.";
                 pedido = contra;
             }
+            return null;
+        }
+
+        // Nivel Dios: sabe cuánto trae el cliente, escoge el auto que más deja y pide lo justo
+        private static string VenderDios(Partida partida, out double recibido)
+        {
+            recibido = 0;
+            Concesionario bot = partida.JugadorActual;
+            Cliente cliente = partida.ClienteActual;
+            bool lic = bot.Vendedor == Concesionario.LICENCIADO;
+
+            int mejor = -1;
+            double mejorGanancia = 0, mejorPrecio = 0;
+            for (int i = 0; i < bot.NumAutos; i++)
+            {
+                Auto a = bot.ObtenerAuto(i);
+                double limite = cliente.Limite(a, lic, bot.VentaSegura);
+                double ganancia = limite - a.Precio;
+                if (ganancia > mejorGanancia)
+                {
+                    mejor = i;
+                    mejorGanancia = ganancia;
+                    mejorPrecio = limite;
+                }
+            }
+            if (mejor == -1)
+                return "leyó al cliente y decidió no venderle nada. Frío y calculador.";
+
+            string nombre = bot.ObtenerAuto(mejor).Nombre;
+            if (partida.OfrecerPrecio(mejor, mejorPrecio, out string respuesta, out double contra, out recibido))
+                return $"leyó la mente del cliente y le vendió el {nombre} en ${mejorPrecio:N0}.";
             return null;
         }
     }

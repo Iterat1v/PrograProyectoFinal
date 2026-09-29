@@ -31,16 +31,18 @@ namespace PrograProyectoFinal
         private bool pierdeTurno = false;
         private string noticia = "";         // lo que le hicieron los rivales
         private bool rendido = false;
-        private bool esBot = false;
+        private int nivelBot = 0;            // 0 = persona; 1 Botardo, 2 Medio, 3 Pro, 4 Dios
+        private Perfil perfil;               // solo las personas
+        private Image cara;                  // su personaje (si lo editó en la tienda)
 
         // Estadísticas para el podio
         private int ventas = 0;
         private double mejorVenta = 0;
         private string mejorVentaAuto = "";
 
-        public Concesionario(string jugador, int vendedor, bool esBot) : this(jugador, vendedor)
+        public Concesionario(string jugador, int vendedor, int nivelBot) : this(jugador, vendedor)
         {
-            this.esBot = esBot;
+            this.nivelBot = nivelBot;
         }
 
         public Concesionario(string jugador, int vendedor)
@@ -75,7 +77,10 @@ namespace PrograProyectoFinal
         public bool Sobreprecio { get => sobreprecio; set => sobreprecio = value; }
         public bool PierdeTurno { get => pierdeTurno; set => pierdeTurno = value; }
         public bool Rendido { get => rendido; set => rendido = value; }
-        public bool EsBot => esBot;
+        public bool EsBot => nivelBot > 0;
+        public int NivelBot => nivelBot;
+        public Perfil Perfil { get => perfil; set => perfil = value; }
+        public Image Cara { get => cara; set => cara = value; }
         public int Ventas => ventas;
         public double MejorVenta => mejorVenta;
         public string MejorVentaAuto => mejorVentaAuto;

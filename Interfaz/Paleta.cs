@@ -30,5 +30,7 @@ namespace PrograProyectoFinal
         public static readonly Color Piso = ColorTranslator.FromHtml("#2b2438");
         public static readonly Color Showroom = ColorTranslator.FromHtml("#24103f");
         public static readonly Color Negro = ColorTranslator.FromHtml("#120818");
+        public static readonly Color Rojo = ColorTranslator.FromHtml("#ff4d4d");
+        public static readonly Color Azul = ColorTranslator.FromHtml("#3f6fd8");
     }
 }

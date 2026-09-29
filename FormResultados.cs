@@ -5,12 +5,15 @@ namespace PrograProyectoFinal
     {
         private Partida partida;
         private Concesionario[] ranking;
+        private string[] recompensas = new string[4];
+        private bool[] subio = new bool[4];
 
         internal FormResultados(Partida partida)
         {
             InitializeComponent();
             this.partida = partida;
             ranking = partida.Ranking();
+            DarRecompensas();
             btnRevancha.Colores(Paleta.Oro, Paleta.Oro2);
             btnNueva.Colores(Paleta.Verde, Paleta.Verde2);
             btnSalir.Colores(Paleta.Rosa, Paleta.Rosa2);
@@ -49,12 +52,27 @@ namespace PrograProyectoFinal
                 Pixel.R(g, x, y, 160, h, Paleta.Negro);
                 Pixel.R(g, x + 6, y + 6, 148, h - 6, bloque[lugar]);
                 Pixel.Texto(g, $"{lugar + 1}", x + 80, y + 52, 24, Paleta.Noche, StringAlignment.Center);
-                Pixel.Sprite(g, Recursos.Vendedores[j.Vendedor], x + 16, y - 132, 8);
+                Pixel.Sprite(g, Recursos.Cara(j), x + 16, y - 132, 8);
                 Pixel.Texto(g, j.Jugador, x + 80, y + 104, 12, Paleta.Noche, StringAlignment.Center);
                 Pixel.Texto(g, j.Rendido ? "se rindió" : Pixel.Dinero(j.Patrimonio()), x + 80, y + 140, 11, Paleta.Noche, StringAlignment.Center);
             }
             if (ranking.Length == 4)
-                Pixel.Texto(g, $"4. {ranking[3].Jugador}  {(ranking[3].Rendido ? "se rindió" : Pixel.Dinero(ranking[3].Patrimonio()))}", 1240, 576, 11, Paleta.Tenue, StringAlignment.Far);
+                Pixel.Texto(g, $"4. {ranking[3].Jugador}  {(ranking[3].Rendido ? "se rindió" : Pixel.Dinero(ranking[3].Patrimonio()))}", 40, 560, 11, Paleta.Tenue);
+
+            // Recompensas de cada persona
+            int fila = 0;
+            for (int i = 0; i < ranking.Length; i++)
+            {
+                if (recompensas[i] == null) continue;
+                if (fila == 0)
+                    Pixel.Texto(g, "RECOMPENSAS", 890, 200, 12, Paleta.Agua);
+                int y = 244 + fila * 84;
+                Pixel.Texto(g, ranking[i].Jugador, 890, y, 11, Paleta.Crema);
+                Pixel.Texto(g, recompensas[i], 890, y + 28, 10, Paleta.Oro);
+                if (subio[i])
+                    Pixel.Texto(g, $"¡SUBISTE A NIVEL {ranking[i].Perfil.Nivel}!", 890, y + 54, 10, Paleta.Rosa);
+                fila++;
+            }
 
             // Estadísticas: búsqueda lineal del mejor en cada cosa
             Concesionario masVentas = ranking[0], mejorVenta = ranking[0];
@@ -75,6 +93,31 @@ namespace PrograProyectoFinal
 
             Pixel.R(g, 0, 600, Pixel.ANCHO, 120, Paleta.Piso);
             Pixel.R(g, 0, 600, Pixel.ANCHO, 6, Paleta.Negro);
+        }
+
+        // XP y monedas para cada persona (los bots no tienen perfil). Se guarda en el archivo.
+        private void DarRecompensas()
+        {
+            int[] porLugar = { 60, 35, 20, 10 };
+            for (int i = 0; i < ranking.Length; i++)
+            {
+                Concesionario j = ranking[i];
+                if (j.Perfil == null) continue;
+                int xp, monedas;
+                if (j.Rendido)
+                {
+                    xp = 10;
+                    monedas = 5;
+                }
+                else
+                {
+                    xp = 40 + j.Ventas * 15 + (i == 0 ? 100 : 0);
+                    monedas = 25 + j.Ventas * 10 + porLugar[i] + (int)Math.Max(0, (j.Patrimonio() - Concesionario.PRESUPUESTO_INICIAL) / 10000);
+                }
+                subio[i] = j.Perfil.Ganar(xp, monedas);
+                recompensas[i] = $"+{xp} XP  +{monedas} monedas";
+            }
+            Perfiles.Guardar();
         }
 
         private void btnRevancha_Click(object sender, EventArgs e)
