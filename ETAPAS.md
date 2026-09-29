@@ -3,7 +3,32 @@
 Ideas para que el juego fluya mejor y se vea más como juego. Van ordenadas por etapa, con las fechas del Trello.
 Los mockups de cómo se vería están en las imágenes que se mandaron al grupo (estilo pixel).
 
-## Etapa 2 · 11 oct · Que el juego fluya
+## Etapa 2 · ya programado (rama `etapa2`)
+
+El juego ya corre de principio a fin con el diseño pixel de la presentación:
+Título → Registro (nombre + vendedor) → Tablero (10 rondas) → Podio. Además, "Cómo se juega" y el Mercado.
+
+- **Clases del diagrama:** `Partida`, `Concesionario`, `Auto` y `Cliente` en la carpeta `Modelo/`. Todo en arreglos:
+  `Concesionario[4]`, `Auto[30]` del catálogo, `Auto[10]` del lote.
+- **Algoritmos:** búsqueda lineal (`Partida.BuscarAuto`, nombre repetido en el registro), burbuja (`Partida.Ranking`)
+  y `turno = (turno + 1) % n`.
+- **Estilo:** `Interfaz/` tiene los colores (`Paleta`), las fuentes y sprites (`Recursos`), el dibujo pixel (`Pixel`),
+  el botón de juego (`BotonPixel`) y la base de todas las pantallas (`FormPixel`). Los sprites son los mismos de los
+  mockups, están en `Assets/Sprites` y se pueden cambiar por dibujos propios (mismo tamaño: personas 16×16, autos 32×16).
+- **Reglas de venta:** el cliente busca un tipo (sedán, compacto o pickup) y trae un presupuesto. Si el auto es de ese tipo
+  y le alcanza, lo compra a 30 % más de lo que costó. Una venta por turno.
+
+### Para el de las cartas
+
+Lo de las cartas no se tocó, se deja listo para conectarlo:
+
+- `FormRegistro.btnJugar_Click`: ahí va `IrA(new FormDraft(partida))` en vez de ir directo al tablero.
+  El `FormDraft` de Samu sigue en el proyecto; le falta recibir la `Partida` en lugar de `List<string>`.
+- `Concesionario`: agregar `PowerUp[] cartas = new PowerUp[3]` (está el comentario).
+- `FormTablero.btnUsarCarta_Click`: ahí se aplica la carta. `OnPaint` dibuja las 3 cartas boca abajo de "MIS CARTAS".
+- Para dibujar una carta boca abajo ya existe `Pixel.CartaBocaAbajo(g, x, y, ancho, alto)`.
+
+## Etapa 2 · 11 oct · Que el juego fluya (notas originales)
 
 - [ ] **Arreglar "Iniciar partida".** Hoy `BtnContinuarTablero_Click` solo hace `this.Hide()` y nunca abre el tablero.
       Por eso parecía que "tardaba en cargar". Hay que abrir el tablero y pasarle los jugadores:
