@@ -21,7 +21,17 @@ namespace PrograProyectoFinal
             btnAgregar = new BotonPixel();
             btnLimpiar = new BotonPixel();
             btnJugar = new BotonPixel();
+            btnBot = new BotonPixel();
             SuspendLayout();
+            //
+            // btnBot
+            //
+            btnBot.Location = new Point(688, 600);
+            btnBot.Name = "btnBot";
+            btnBot.Size = new Size(172, 86);
+            btnBot.TabIndex = 4;
+            btnBot.Text = "+ BOT";
+            btnBot.Click += btnBot_Click;
             //
             // txtNombre
             //
@@ -70,6 +80,7 @@ namespace PrograProyectoFinal
             Controls.Add(btnAgregar);
             Controls.Add(btnLimpiar);
             Controls.Add(btnJugar);
+            Controls.Add(btnBot);
             Name = "FormRegistro";
             Titulo = "¡BIENVENIDO! · ELIGE A TU VENDEDOR";
             ResumeLayout(false);
@@ -82,5 +93,6 @@ namespace PrograProyectoFinal
         private BotonPixel btnAgregar;
         private BotonPixel btnLimpiar;
         private BotonPixel btnJugar;
+        private BotonPixel btnBot;
     }
 }

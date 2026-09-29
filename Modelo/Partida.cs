@@ -48,6 +48,8 @@ namespace PrograProyectoFinal
         private static readonly string[] dias = { "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO" };
 
         private int evento = -1;          // -1 = día normal
+        public const int MAX_INTENTOS = 3;
+        private int intentos = 0;          // ofertas rechazadas por el cliente de este turno
         private bool diaNuevo = true;     // para que la pantalla anuncie el día
 
         private static string[] nombresClientes =
@@ -154,9 +156,13 @@ namespace PrograProyectoFinal
         }
 
         // Llega un cliente con el tipo de auto que busca y cuánto trae
+        public int Intentos => intentos;
+        public Random Azar => azar;
+
         public Cliente NuevoCliente()
         {
             yaVendio = false;
+            intentos = 0;
             if (evento == NO_HAY_NADIE)
             {
                 cliente = null;
@@ -213,25 +219,45 @@ namespace PrograProyectoFinal
         {
             if (cliente == null || azar.Next(100) >= 25)
                 return false;
-            cliente = new Cliente("El Bro", 9999999, -1, "¡Qué onda, carnal! Traigo cash. Véndeme lo que sea y te doy 25 % más.", 8, 1.25);
+            cliente = new Cliente("El Bro", 9999999, -1, "¡Qué onda, carnal! Traigo cash. Véndeme lo que sea y ponle tú el precio.", 8, 1.25);
             yaVendio = false;
+            intentos = 0;
             return true;
         }
 
-        public string Vender(int indice, out bool vendido)
+        // El jugador le pide un precio al cliente por el auto "indice" de su lote.
+        // true = se vendió. Si no, "contraoferta" es lo que daría el cliente.
+        public bool OfrecerPrecio(int indice, double precio, out string respuesta, out double contraoferta, out double recibido)
         {
-            if (cliente == null)
+            recibido = 0;
+            contraoferta = 0;
+            if (cliente == null || yaVendio)
             {
-                vendido = false;
-                return "No hay nadie...";
+                respuesta = "No hay nadie...";
+                return false;
             }
-            string respuesta = JugadorActual.Vender(indice, cliente, out vendido);
-            if (vendido)
+
+            Concesionario j = JugadorActual;
+            Auto auto = j.ObtenerAuto(indice);
+            int decision = cliente.Evaluar(auto, precio, j.Vendedor == Concesionario.LICENCIADO, j.VentaSegura, azar,
+                                           out respuesta, out contraoferta);
+            if (decision == Cliente.ACEPTA)
+            {
+                recibido = j.CerrarVenta(indice, cliente, precio, out string detalle);
+                respuesta += detalle;
                 yaVendio = true;
-            return respuesta;
+                return true;
+            }
+
+            intentos++;
+            if (intentos >= MAX_INTENTOS)
+            {
+                respuesta = "¡Ya me cansé de regatear! Me voy a otro lado.";
+                yaVendio = true;      // el cliente se fue: ya no se puede vender este turno
+            }
+            return false;
         }
 
-        // turno = (turno + 1) % n; cuando se da la vuelta empieza otra ronda
         // Se salta a los que se rindieron. Cuando se da la vuelta empieza otro día.
         public void SiguienteTurno()
         {
@@ -301,7 +327,7 @@ namespace PrograProyectoFinal
         {
             Partida nueva = new Partida();
             for (int i = 0; i < numJugadores; i++)
-                nueva.AgregarJugador(new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor));
+                nueva.AgregarJugador(new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor, jugadores[i].EsBot));
             return nueva;
         }
 

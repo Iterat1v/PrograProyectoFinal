@@ -31,6 +31,17 @@ namespace PrograProyectoFinal
         private bool pierdeTurno = false;
         private string noticia = "";         // lo que le hicieron los rivales
         private bool rendido = false;
+        private bool esBot = false;
+
+        // Estadísticas para el podio
+        private int ventas = 0;
+        private double mejorVenta = 0;
+        private string mejorVentaAuto = "";
+
+        public Concesionario(string jugador, int vendedor, bool esBot) : this(jugador, vendedor)
+        {
+            this.esBot = esBot;
+        }
 
         public Concesionario(string jugador, int vendedor)
         {
@@ -64,6 +75,10 @@ namespace PrograProyectoFinal
         public bool Sobreprecio { get => sobreprecio; set => sobreprecio = value; }
         public bool PierdeTurno { get => pierdeTurno; set => pierdeTurno = value; }
         public bool Rendido { get => rendido; set => rendido = value; }
+        public bool EsBot => esBot;
+        public int Ventas => ventas;
+        public double MejorVenta => mejorVenta;
+        public string MejorVentaAuto => mejorVentaAuto;
 
         // Si ya había una noticia, la nueva se agrega
         public string Noticia
@@ -152,49 +167,69 @@ namespace PrograProyectoFinal
 
         // ----- ventas -----
 
-        // Lo que pagaría el cliente por ese auto
+        // Precio de lista que se sugiere (30 % sobre lo que costó; el Licenciado 5 % más)
         public double PrecioVenta(Auto auto)
         {
             double precio = auto.PrecioVenta();
             if (vendedor == LICENCIADO)
                 precio *= 1.05;
-            if (errorDeCuentas)
-                precio *= 0.80;
             return Math.Round(precio / 1000) * 1000;
         }
 
-        // Intenta venderle el auto al cliente. Regresa lo que contesta el cliente
-        public string Vender(int indice, Cliente cliente, out bool vendido)
+        // Cierra la venta al precio que se negoció. Regresa lo que ganó de verdad.
+        public double CerrarVenta(int indice, Cliente cliente, double precio, out string detalle)
         {
             Auto auto = autos[indice];
-            double precio = Math.Round(PrecioVenta(auto) * cliente.FactorPago / 1000) * 1000;
-            vendido = false;
+            double recibido = precio;
+            detalle = "";
 
-            if (!ventaSegura && !cliente.AceptaCualquiera)
+            if (errorDeCuentas)
             {
-                if (auto.Tipo != cliente.TipoBuscado)
-                    return $"Mmm no. Yo busco un {Recursos.Tipos[cliente.TipoBuscado].ToLower()}.";
-                if (precio > cliente.Presupuesto)
-                    return $"¡Muy caro! Nada más traigo ${cliente.Presupuesto:N0}.";
+                recibido *= 0.80;
+                detalle += " Error de cuentas: -20 %.";
             }
-
             // Si lo quiere de otro color, hay que pintarlo
-            double pintura = 0;
-            string extra = "";
             if (cliente.ColorBuscado != -1 && auto.Color != cliente.ColorBuscado)
             {
-                pintura = PINTURA;
-                extra = $" Lo pintaste de {Cliente.NombresColor[cliente.ColorBuscado]}: -${PINTURA:N0}.";
+                recibido -= PINTURA;
+                detalle += $" Lo pintaste de {Cliente.NombresColor[cliente.ColorBuscado]}: -${PINTURA:N0}.";
+            }
+            if (bonoVenta > 0)
+            {
+                recibido += bonoVenta;
+                detalle += $" Bono: +${bonoVenta:N0}.";
             }
 
-            Dinero += precio + bonoVenta - pintura;
-            if (bonoVenta > 0) extra += $" +${bonoVenta:N0} de bono.";
+            Dinero = Math.Max(0, dinero + recibido);
             QuitarAuto(indice);
             bonoVenta = 0;
             errorDeCuentas = false;
             ventaSegura = false;
-            vendido = true;
-            return $"¡Trato hecho! Me llevo el {auto.Modelo}.{extra}";
+
+            ventas++;
+            if (precio > mejorVenta)
+            {
+                mejorVenta = precio;
+                mejorVentaAuto = auto.Nombre;
+            }
+            return recibido;
+        }
+
+        // Rematar: se lo vendes al lote de enfrente al 70 % y regresa al mercado
+        public const double REMATE = 0.70;
+
+        public double PrecioRemate(Auto auto)
+        {
+            return Math.Round(auto.Precio * REMATE / 1000) * 1000;
+        }
+
+        public double Rematar(int indice)
+        {
+            Auto auto = QuitarAuto(indice);
+            double precio = PrecioRemate(auto);
+            Dinero += precio;
+            auto.Disponible = true;
+            return precio;
         }
 
         // Recorre el arreglo hacia la izquierda para no dejar huecos

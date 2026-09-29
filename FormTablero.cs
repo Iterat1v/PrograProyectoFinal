@@ -9,7 +9,12 @@ namespace PrograProyectoFinal
         private int seleccionado = -1;             // índice del auto escogido en el lote
         private int pagina = 0;
         private string dialogo;                    // lo que dice el cliente en el globo
-        private bool esperando = false;            // ya vendió y se va a pasar el turno solo
+        private bool esperando = false;            // ya vendió o juega el bot: los botones no se usan
+        private int pasoBot = 0;                   // en qué va el bot en su turno
+
+        // Texto que sube flotando cuando entra dinero ("+$127,000")
+        private string flotante = "";
+        private int flotanteY = 0;
 
         internal FormTablero(Partida partida)
         {
@@ -68,6 +73,13 @@ namespace PrograProyectoFinal
             else
                 Recursos.Sonar("turno");
 
+            if (jugador.EsBot)
+            {
+                jugador.Noticia = "";
+                EmpezarBot();
+                return;
+            }
+
             if (jugador.Noticia != "")
             {
                 Recursos.Sonar("estafa");
@@ -122,7 +134,16 @@ namespace PrograProyectoFinal
             btnMercado.Enabled = libre;
             btnUsarCarta.Enabled = libre && jugador.NumCartas > 0;
             btnPasar.Enabled = !esperando;
-            btnPasar.Text = esperando ? "SIGUIENTE TURNO..." : "PASAR TURNO";
+            btnPasar.Text = jugador.EsBot ? "JUGANDO EL BOT..." : esperando ? "SIGUIENTE TURNO..." : "PASAR TURNO";
+
+            // REMATAR aparece en el auto seleccionado
+            int fila = seleccionado - pagina * FILAS;
+            btnRematar.Visible = libre && seleccionado != -1 && fila >= 0 && fila < FILAS;
+            if (btnRematar.Visible)
+            {
+                btnRematar.Location = new Point(226, 498);
+                btnRematar.Text = $"REMATAR {Pixel.DineroCorto(jugador.PrecioRemate(jugador.ObtenerAuto(seleccionado)))}";
+            }
             Invalidate();
         }
 
@@ -233,7 +254,36 @@ namespace PrograProyectoFinal
                     Pixel.Texto(g, "se rindió", 1084, y + 62, 11, Paleta.Rosa2);
                 else
                     Pixel.Texto(g, Pixel.DineroCorto(r.Patrimonio()), 1084, y + 62, 12, Paleta.Verde2);
+                if (r.EsBot)
+                    Pixel.Texto(g, "BOT", 1230, y + 20, 9, Paleta.Lila, StringAlignment.Far);
             }
+            DibujarFlotante(g);
+        }
+
+        private void DibujarFlotante(Graphics g)
+        {
+            if (flotante == "") return;
+            Color color = flotante.StartsWith("+") ? Paleta.Verde : Paleta.Rosa;
+            Pixel.Texto(g, flotante, 1052, 100 + flotanteY + 3, 17, Paleta.Negro);
+            Pixel.Texto(g, flotante, 1048, 100 + flotanteY, 17, color);
+        }
+
+        private void MostrarFlotante(double cantidad)
+        {
+            flotante = cantidad >= 0 ? $"+{Pixel.Dinero(cantidad)}" : $"-{Pixel.Dinero(-cantidad)}";
+            flotanteY = 40;
+            timerFlotante.Start();
+        }
+
+        private void timerFlotante_Tick(object sender, EventArgs e)
+        {
+            flotanteY -= 2;
+            if (flotanteY < -24)
+            {
+                flotante = "";
+                timerFlotante.Stop();
+            }
+            Invalidate(new Rectangle(1000, 60, 280, 100));
         }
 
         // Si el texto no cabe en el globo, se hace más chiquita la letra
@@ -289,31 +339,120 @@ namespace PrograProyectoFinal
                 return;
             }
 
-            dialogo = partida.Vender(seleccionado, out bool vendido);
+            bool vendido;
+            using (FormNegociar negociar = new FormNegociar(partida, seleccionado))
+            {
+                vendido = negociar.ShowDialog(this) == DialogResult.OK;
+                dialogo = negociar.Resultado == "" ? dialogo : negociar.Resultado;
+                if (vendido)
+                    MostrarFlotante(negociar.Recibido);
+            }
             if (!vendido)
             {
-                Recursos.Sonar("error");
                 Actualizar();
                 return;
             }
-
             seleccionado = -1;
-            Recursos.Sonar("venta");
+            DespuesDeVender();
+        }
 
-            // De la nada puede llegar un bro con cash
+        // Después de vender: a veces llega El Bro; si no, se pasa el turno solo
+        private void DespuesDeVender()
+        {
             if (partida.TalVezLlegaBro())
             {
                 Actualizar();
                 Recursos.Sonar("bro");
-                FormAviso.Mostrar(this, "¡LLEGÓ UN BRO!", "De la nada se metió El Bro con cash. Te compra el auto que sea y paga 25 % más.",
-                                  Paleta.Lila, Recursos.Clientes[8]);
+                if (!partida.JugadorActual.EsBot)
+                    FormAviso.Mostrar(this, "¡LLEGÓ UN BRO!", "De la nada se metió El Bro con cash. Te compra el auto que sea y le puedes pedir hasta 50 % más de lo que te costó.",
+                                      Paleta.Lila, Recursos.Clientes[8]);
                 dialogo = partida.ClienteActual.Saludo;
             }
-            else if (Recursos.PasarAlVender)
+            else if (Recursos.PasarAlVender && !partida.JugadorActual.EsBot)
             {
                 esperando = true;
                 timerPasar.Start();
             }
+            Actualizar();
+        }
+
+        private void btnRematar_Click(object sender, EventArgs e)
+        {
+            Concesionario jugador = partida.JugadorActual;
+            Auto auto = jugador.ObtenerAuto(seleccionado);
+            double precio = jugador.PrecioRemate(auto);
+            if (!FormAviso.Preguntar(this, "¿REMATAR?", $"El lote de enfrente te da {Pixel.Dinero(precio)} por el {auto.Nombre} (70 % de lo que te costó) y regresa al mercado.",
+                                     Paleta.Oro, Recursos.Autos[auto.Tipo, auto.Color]))
+                return;
+            jugador.Rematar(seleccionado);
+            seleccionado = -1;
+            Recursos.Sonar("compra");
+            MostrarFlotante(precio);
+            dialogo = $"Remataste el {auto.Nombre}. Algo es algo.";
+            Actualizar();
+        }
+
+        // ----- turno del bot: 4 pasos con pausa para que se vea lo que hace -----
+        private void EmpezarBot()
+        {
+            esperando = true;
+            pasoBot = 0;
+            Actualizar();
+            timerBot.Start();
+        }
+
+        private void timerBot_Tick(object sender, EventArgs e)
+        {
+            Concesionario bot = partida.JugadorActual;
+            string quien = bot.Jugador;
+            string hizo = null;
+
+            switch (pasoBot)
+            {
+                case 0:
+                    if (bot.PierdeTurno)
+                    {
+                        dialogo = $"{quien} perdió el turno: su cliente se fue.";
+                        pasoBot = 3;
+                    }
+                    else
+                        hizo = Bot.UsarCarta(partida);
+                    if (hizo != null) Recursos.Sonar(hizo.Contains("\"") ? "carta" : "turno");
+                    break;
+                case 1:
+                    if (partida.HayOferta() && Bot.AceptaOferta(partida) &&
+                        bot.CompraDirecta(partida.OfertaAuto, partida.OfertaPrecio) == null)
+                        hizo = $"le compró su {partida.OfertaAuto.Nombre} a {partida.OfertaSenor}. ";
+                    string compras = Bot.Comprar(partida);
+                    if (compras != null)
+                    {
+                        hizo = (hizo ?? "") + compras;
+                        Recursos.Sonar("compra");
+                    }
+                    break;
+                case 2:
+                    hizo = Bot.Vender(partida, out double recibido);
+                    if (recibido > 0)
+                    {
+                        MostrarFlotante(recibido);
+                        Recursos.Sonar("venta");
+                        if (partida.TalVezLlegaBro())
+                        {
+                            Recursos.Sonar("bro");
+                            string otra = Bot.Vender(partida, out double otroRecibido);
+                            if (otroRecibido > 0) hizo += $" ¡Llegó El Bro y también le {otra}";
+                        }
+                    }
+                    break;
+                default:
+                    timerBot.Stop();
+                    PasarTurno();
+                    return;
+            }
+
+            if (hizo != null)
+                dialogo = $"{quien} {hizo}";
+            pasoBot++;
             Actualizar();
         }
 
@@ -341,6 +480,7 @@ namespace PrograProyectoFinal
         private void PasarTurno()
         {
             timerPasar.Stop();
+            timerBot.Stop();
             partida.SiguienteTurno();
             if (partida.Terminada)
             {
@@ -381,7 +521,9 @@ namespace PrograProyectoFinal
         private void AbrirMenu()
         {
             bool estabaEsperando = timerPasar.Enabled;
+            bool botJugando = timerBot.Enabled;
             timerPasar.Stop();
+            timerBot.Stop();
 
             int eleccion;
             using (FormMenu menu = new FormMenu())
@@ -423,6 +565,8 @@ namespace PrograProyectoFinal
 
             if (estabaEsperando)
                 timerPasar.Start();
+            if (botJugando)
+                timerBot.Start();
         }
 
         protected override void OnKeyDown(KeyEventArgs e)

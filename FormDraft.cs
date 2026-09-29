@@ -18,6 +18,24 @@ namespace PrograProyectoFinal
             partida.PrepararDraft();
             btnIniciar.Colores(Paleta.Verde, Paleta.Verde2);
             btnIniciar.Enabled = false;
+            TurnoDelBot();
+        }
+
+        // Si le toca a un bot, escoge solo después de una pausa
+        private void TurnoDelBot()
+        {
+            if (!partida.DraftTerminado && partida.ObtenerJugador(partida.JugadorDraft).EsBot)
+                timerBot.Start();
+        }
+
+        private void timerBot_Tick(object sender, EventArgs e)
+        {
+            timerBot.Stop();
+            Bot.EscogerDraft(partida, out int f, out int c);
+            volteando = f * 4 + c;
+            paso = 0;
+            Recursos.Sonar("carta");
+            timerVoltear.Start();
         }
 
         private Rectangle Casilla(int fila, int columna)
@@ -103,7 +121,7 @@ namespace PrograProyectoFinal
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            if (volteando != -1 || partida.DraftTerminado) return;
+            if (volteando != -1 || partida.DraftTerminado || partida.ObtenerJugador(partida.JugadorDraft).EsBot) return;
 
             for (int f = 0; f < 4; f++)
                 for (int c = 0; c < 4; c++)
@@ -143,6 +161,8 @@ namespace PrograProyectoFinal
                     btnIniciar.Enabled = true;
                     Recursos.Sonar("turno");
                 }
+                else
+                    TurnoDelBot();
             }
             Invalidate();
         }

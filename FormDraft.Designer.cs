@@ -20,6 +20,7 @@ namespace PrograProyectoFinal
             components = new System.ComponentModel.Container();
             btnIniciar = new BotonPixel();
             timerVoltear = new System.Windows.Forms.Timer(components);
+            timerBot = new System.Windows.Forms.Timer(components);
             SuspendLayout();
             //
             // btnIniciar
@@ -36,6 +37,11 @@ namespace PrograProyectoFinal
             timerVoltear.Interval = 15;
             timerVoltear.Tick += timerVoltear_Tick;
             //
+            // timerBot
+            //
+            timerBot.Interval = 700;
+            timerBot.Tick += timerBot_Tick;
+            //
             // FormDraft
             //
             AcceptButton = btnIniciar;
@@ -50,5 +56,6 @@ namespace PrograProyectoFinal
 
         private BotonPixel btnIniciar;
         private System.Windows.Forms.Timer timerVoltear;
+        private System.Windows.Forms.Timer timerBot;
     }
 }

@@ -56,6 +56,23 @@ namespace PrograProyectoFinal
             if (ranking.Length == 4)
                 Pixel.Texto(g, $"4. {ranking[3].Jugador}  {(ranking[3].Rendido ? "se rindió" : Pixel.Dinero(ranking[3].Patrimonio()))}", 1240, 576, 11, Paleta.Tenue, StringAlignment.Far);
 
+            // Estadísticas: búsqueda lineal del mejor en cada cosa
+            Concesionario masVentas = ranking[0], mejorVenta = ranking[0];
+            for (int i = 1; i < ranking.Length; i++)
+            {
+                if (ranking[i].Ventas > masVentas.Ventas) masVentas = ranking[i];
+                if (ranking[i].MejorVenta > mejorVenta.MejorVenta) mejorVenta = ranking[i];
+            }
+            if (masVentas.Ventas > 0)
+            {
+                Pixel.Texto(g, "ESTADÍSTICAS", 40, 200, 12, Paleta.Agua);
+                Pixel.Texto(g, "Más ventas:", 40, 244, 10, Paleta.Tenue);
+                Pixel.Texto(g, $"{masVentas.Jugador} ({masVentas.Ventas})", 40, 274, 11, Paleta.Crema);
+                Pixel.Texto(g, "Mejor venta:", 40, 318, 10, Paleta.Tenue);
+                Pixel.Texto(g, mejorVenta.Jugador, 40, 348, 11, Paleta.Crema);
+                Pixel.Texto(g, $"{mejorVenta.MejorVentaAuto} {Pixel.DineroCorto(mejorVenta.MejorVenta)}", 40, 376, 10, Paleta.Oro);
+            }
+
             Pixel.R(g, 0, 600, Pixel.ANCHO, 120, Paleta.Piso);
             Pixel.R(g, 0, 600, Pixel.ANCHO, 6, Paleta.Negro);
         }

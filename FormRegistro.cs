@@ -18,6 +18,7 @@ namespace PrograProyectoFinal
             btnAgregar.Colores(Paleta.Crema, Paleta.Crema2);
             btnLimpiar.Colores(Paleta.Crema, Paleta.Crema2);
             btnJugar.Colores(Paleta.Verde, Paleta.Verde2);
+            btnBot.Colores(Paleta.Lila, Paleta.Morado3);
             ElegirPrimeroLibre();
             ActualizarBotones();
         }
@@ -147,6 +148,32 @@ namespace PrograProyectoFinal
             return aviso == "";
         }
 
+        // Agrega un bot con el vendedor escogido (o el primero libre) y un nombre libre
+        private void btnBot_Click(object sender, EventArgs e)
+        {
+            if (partida.NumJugadores == Partida.MAX_JUGADORES)
+            {
+                aviso = "Ya no caben: máximo 4 jugadores";
+                Invalidate();
+                return;
+            }
+            if (elegido == -1)
+                ElegirPrimeroLibre();
+
+            string nombre = "";
+            for (int i = 0; i < Bot.Nombres.Length && nombre == ""; i++)
+                if (!NombreRepetido(Bot.Nombres[i]))
+                    nombre = Bot.Nombres[i];
+
+            partida.AgregarJugador(new Concesionario(nombre, elegido, true));
+            duenos[elegido] = nombre;
+            aviso = "";
+            ElegirPrimeroLibre();
+            ActualizarBotones();
+            Invalidate();
+            txtNombre.Focus();
+        }
+
         // Búsqueda lineal en los jugadores que ya se registraron
         private bool NombreRepetido(string nombre)
         {
@@ -167,6 +194,7 @@ namespace PrograProyectoFinal
         private void ActualizarBotones()
         {
             btnAgregar.Enabled = partida.NumJugadores < Partida.MAX_JUGADORES;
+            btnBot.Enabled = partida.NumJugadores < Partida.MAX_JUGADORES;
             txtNombre.Enabled = partida.NumJugadores < Partida.MAX_JUGADORES;
             btnJugar.Enabled = partida.NumJugadores >= Partida.MIN_JUGADORES ||
                                (partida.NumJugadores == Partida.MIN_JUGADORES - 1 && txtNombre.Text.Trim() != "");

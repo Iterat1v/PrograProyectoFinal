@@ -19,7 +19,10 @@ namespace PrograProyectoFinal
         {
             components = new System.ComponentModel.Container();
             btnMenu = new BotonPixel();
+            btnRematar = new BotonPixel();
             timerPasar = new System.Windows.Forms.Timer(components);
+            timerBot = new System.Windows.Forms.Timer(components);
+            timerFlotante = new System.Windows.Forms.Timer(components);
             btnMercado = new BotonPixel();
             btnVender = new BotonPixel();
             btnUsarCarta = new BotonPixel();
@@ -37,6 +40,26 @@ namespace PrograProyectoFinal
             btnMenu.TamLetra = 10F;
             btnMenu.Text = "MENÚ";
             btnMenu.Click += btnMenu_Click;
+            //
+            // btnRematar
+            //
+            btnRematar.Name = "btnRematar";
+            btnRematar.Size = new Size(164, 42);
+            btnRematar.TabIndex = 7;
+            btnRematar.TamLetra = 8F;
+            btnRematar.Text = "REMATAR";
+            btnRematar.Visible = false;
+            btnRematar.Click += btnRematar_Click;
+            //
+            // timerBot
+            //
+            timerBot.Interval = 1100;
+            timerBot.Tick += timerBot_Tick;
+            //
+            // timerFlotante
+            //
+            timerFlotante.Interval = 30;
+            timerFlotante.Tick += timerFlotante_Tick;
             //
             // timerPasar
             //
@@ -103,6 +126,7 @@ namespace PrograProyectoFinal
             // FormTablero
             //
             ClientSize = new Size(1280, 720);
+            Controls.Add(btnRematar);
             Controls.Add(btnMenu);
             Controls.Add(btnMercado);
             Controls.Add(btnVender);
@@ -118,6 +142,9 @@ namespace PrograProyectoFinal
 
         private BotonPixel btnMenu;
         private System.Windows.Forms.Timer timerPasar;
+        private System.Windows.Forms.Timer timerBot;
+        private System.Windows.Forms.Timer timerFlotante;
+        private BotonPixel btnRematar;
         private BotonPixel btnMercado;
         private BotonPixel btnVender;
         private BotonPixel btnUsarCarta;

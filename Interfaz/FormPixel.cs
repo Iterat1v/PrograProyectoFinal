@@ -50,6 +50,27 @@ namespace PrograProyectoFinal
             Close();
         }
 
+        // Las pantallas grandes entran con un fundido (sube Opacity con un Timer)
+        protected override void OnShown(EventArgs e)
+        {
+            if (!Modal && Width >= Pixel.ANCHO)
+            {
+                Opacity = 0;
+                System.Windows.Forms.Timer fundido = new System.Windows.Forms.Timer { Interval = 15 };
+                fundido.Tick += (s, ev) =>
+                {
+                    Opacity = Math.Min(1, Opacity + 0.12);
+                    if (Opacity >= 1)
+                    {
+                        fundido.Stop();
+                        fundido.Dispose();
+                    }
+                };
+                fundido.Start();
+            }
+            base.OnShown(e);
+        }
+
         // Si el jugador cierra la ventana (y no es un cambio de pantalla), se acaba el juego
         protected override void OnFormClosed(FormClosedEventArgs e)
         {
