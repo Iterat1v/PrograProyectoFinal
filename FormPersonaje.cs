@@ -1,17 +1,20 @@
 namespace PrograProyectoFinal
 {
-    // Tu personaje + la tienda: escoges tez, peinado, lentes, gorros, máscaras...
-    // Lo que no tienes se compra con monedas; algunas cosas piden nivel.
+    // Casillero: solo aparecen los artículos que YA tienes (los básicos, lo que compraste en la
+    // tienda y lo que ganaste en el pase). Aquí no se compra nada: solo te lo pones.
     public partial class FormPersonaje : FormPixel
     {
         private const int COLUMNAS = 5;
+        private const int POR_PAGINA = 10;
 
         private Perfil perfil;
         private int parte = Avatar.PEINADO;           // categoría que se está viendo
+        private int pagina = 0;
         private BotonPixel[] pestanas = new BotonPixel[Avatar.PARTES];
-        private Image[] vistas = new Image[10];        // cómo se vería con cada opción
+        private int[] tuyos = new int[Cosmeticos.MAX];  // los artículos que tienes de esta parte
+        private int numTuyos = 0;
+        private Image[] vistas = new Image[POR_PAGINA];
         private Image cara;
-        private string aviso = "";
 
         internal FormPersonaje(Perfil perfil)
         {
@@ -20,15 +23,17 @@ namespace PrograProyectoFinal
             Titulo = $"CASILLERO · {perfil.Nombre.ToUpper()}";
             btnAzar.Colores(Paleta.Agua, Paleta.Agua2);
             btnListo.Colores(Paleta.Verde, Paleta.Verde2);
+            Boton("<", 420, 632, 64, 64, Paleta.LilaClaro, Paleta.Crema2, (s, e) => CambiarPagina(-1), 14);
+            Boton(">", 492, 632, 64, 64, Paleta.LilaClaro, Paleta.Crema2, (s, e) => CambiarPagina(1), 14);
 
-            // Las 8 pestañas se crean con un arreglo de botones
+            // Las 9 pestañas se crean con un arreglo de botones
             for (int i = 0; i < Avatar.PARTES; i++)
             {
                 BotonPixel b = new BotonPixel();
                 b.Text = Avatar.NombresParte[i];
-                b.TamLetra = 10;
-                b.Size = new Size(200, 52);
-                b.Location = new Point(420 + (i % 4) * 206, 72 + (i / 4) * 58);
+                b.TamLetra = 9;
+                b.Size = new Size(158, 52);
+                b.Location = new Point(420 + (i % 5) * 164, 72 + (i / 5) * 58);
                 b.Tag = i;
                 b.Click += Pestana_Click;
                 pestanas[i] = b;
@@ -37,25 +42,42 @@ namespace PrograProyectoFinal
             Refrescar();
         }
 
+        private int Paginas => Math.Max(1, (numTuyos + POR_PAGINA - 1) / POR_PAGINA);
+
+        // Búsqueda lineal de lo que tienes en esta parte
         private void Refrescar()
         {
+            numTuyos = 0;
+            for (int o = 0; o < Cosmeticos.Cantidad(parte); o++)
+                if (perfil.LoTiene(parte, o))
+                    tuyos[numTuyos++] = o;
+            if (pagina >= Paginas) pagina = Paginas - 1;
+
             cara = perfil.Avatar.Dibujar();
-            for (int o = 0; o < vistas.Length; o++)
-                vistas[o] = null;
-            for (int o = 0; o < Avatar.Opciones[parte].Length; o++)
+            for (int k = 0; k < POR_PAGINA; k++)
             {
+                vistas[k] = null;
+                int n = pagina * POR_PAGINA + k;
+                if (n >= numTuyos) continue;
                 Avatar prueba = perfil.Avatar.Copia();
-                prueba.Cambiar(parte, o);
-                vistas[o] = prueba.Dibujar();
+                prueba.Cambiar(parte, tuyos[n]);
+                vistas[k] = prueba.Dibujar();
             }
             for (int i = 0; i < Avatar.PARTES; i++)
                 pestanas[i].Colores(i == parte ? Paleta.Oro : Paleta.LilaClaro, i == parte ? Paleta.Oro2 : Paleta.Crema2);
             Invalidate();
         }
 
-        private Rectangle Casilla(int opcion)
+        private void CambiarPagina(int cuanto)
         {
-            return new Rectangle(420 + (opcion % COLUMNAS) * 166, 200 + (opcion / COLUMNAS) * 204, 158, 196);
+            pagina = Math.Max(0, Math.Min(Paginas - 1, pagina + cuanto));
+            Recursos.Sonar("menu");
+            Refrescar();
+        }
+
+        private Rectangle Casilla(int k)
+        {
+            return new Rectangle(420 + (k % COLUMNAS) * 166, 196 + (k / COLUMNAS) * 214, 158, 206);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -70,58 +92,48 @@ namespace PrograProyectoFinal
             Pixel.R(g, 80, 144, 280, 280, Paleta.Morado3);
             Pixel.Sprite(g, cara, 92, 156, 16);
             Pixel.Texto(g, $"NIVEL {perfil.Nivel}", 220, 460, 14, Paleta.Morado2, StringAlignment.Center);
-            Pixel.R(g, 70, 488, 300, 22, Paleta.Negro);
-            Pixel.R(g, 74, 492, 292, 14, Paleta.LilaClaro);
-            Pixel.R(g, 74, 492, 292 * perfil.XpEnNivel / Perfil.XP_POR_NIVEL, 14, Paleta.Agua);
-            Pixel.Texto(g, $"{perfil.XpEnNivel} / {Perfil.XP_POR_NIVEL} XP", 220, 530, 10, Paleta.Gris, StringAlignment.Center);
-            Pixel.Sprite(g, Recursos.Moneda, 110, 562, 6);
-            Pixel.Texto(g, $"{perfil.Monedas} monedas", 160, 580, 14, Paleta.Oro2);
-            Pixel.Parrafo(g, "Ganas monedas y XP en cada partida.", new Rectangle(64, 620, 312, 60), 9, Paleta.Gris, StringAlignment.Center);
-
-            // ----- artículos de la categoría -----
-            for (int o = 0; o < Avatar.Opciones[parte].Length; o++)
+            int total = 0, tiene = 0;
+            for (int p = 0; p < Avatar.PARTES; p++)
             {
-                Rectangle c = Casilla(o);
-                bool puesto = perfil.Avatar.Parte(parte) == o;
-                bool tuyo = perfil.LoTiene(parte, o);
-                int nivel = Perfil.Niveles[parte][o];
-                bool bloqueado = !tuyo && perfil.Nivel < nivel;
-
-                if (puesto)
-                {
-                    Pixel.Panel(g, c.X, c.Y, c.Width, c.Height, Paleta.Oro);
-                    Pixel.R(g, c.X + 10, c.Y + 10, c.Width - 20, c.Height - 20, Paleta.Crema);
-                }
-                else
-                    Pixel.Panel(g, c.X, c.Y, c.Width, c.Height, bloqueado ? Paleta.Crema2 : Paleta.Crema);
-
-                Pixel.R(g, c.X + 27, c.Y + 14, 104, 104, bloqueado ? Paleta.Gris : Paleta.Morado3);
-                Pixel.Sprite(g, vistas[o], c.X + 31, c.Y + 18, 6);
-                Pixel.Texto(g, Avatar.Opciones[parte][o], c.X + 79, c.Y + 140, 9, Paleta.Noche, StringAlignment.Center);
-
-                if (puesto)
-                    Pixel.Texto(g, "PUESTO", c.X + 79, c.Y + 170, 10, Paleta.Verde2, StringAlignment.Center);
-                else if (tuyo)
-                    Pixel.Texto(g, "TUYO", c.X + 79, c.Y + 170, 10, Paleta.Gris, StringAlignment.Center);
-                else if (bloqueado)
-                    Pixel.Texto(g, $"NIVEL {nivel}", c.X + 79, c.Y + 170, 10, Paleta.Rosa2, StringAlignment.Center);
-                else
-                {
-                    Pixel.Sprite(g, Recursos.Moneda, c.X + 40, c.Y + 162, 3);
-                    Pixel.Texto(g, $"{Perfil.Precios[parte][o]}", c.X + 64, c.Y + 170, 10, Paleta.Oro2);
-                }
+                total += Cosmeticos.Cantidad(p);
+                tiene += perfil.CuantosTiene(p);
             }
+            Pixel.Texto(g, $"Colección: {tiene} de {total}", 220, 494, 11, Paleta.Gris, StringAlignment.Center);
+            Pixel.R(g, 70, 512, 300, 16, Paleta.Negro);
+            Pixel.R(g, 74, 516, 292 * tiene / total, 8, Paleta.Agua);
+            Pixel.Sprite(g, Recursos.Moneda, 110, 548, 6);
+            Pixel.Texto(g, $"{perfil.Monedas} monedas", 160, 566, 14, Paleta.Oro2);
+            Pixel.Parrafo(g, "Consigue más en la TIENDA del día y en el PASE de temporada.", new Rectangle(64, 604, 312, 60), 9, Paleta.Gris, StringAlignment.Center);
 
-            if (aviso != "")
-                Pixel.Parrafo(g, aviso, new Rectangle(420, 626, 290, 80), 10, Paleta.Rosa);
-            else
-                Pixel.Parrafo(g, "Clic para ponértelo. Si no lo tienes, se compra.", new Rectangle(420, 626, 290, 80), 10, Paleta.Tenue);
+            // ----- lo que tienes de esta parte -----
+            if (numTuyos == 0)
+                Pixel.Parrafo(g, "Todavía no tienes nada de esta parte.", new Rectangle(440, 300, 780, 60), 13, Paleta.Tenue, StringAlignment.Center);
+            for (int k = 0; k < POR_PAGINA; k++)
+            {
+                int n = pagina * POR_PAGINA + k;
+                if (n >= numTuyos) break;
+                int o = tuyos[n];
+                Rectangle c = Casilla(k);
+                bool puesto = perfil.Avatar.Parte(parte) == o;
+                int rareza = Cosmeticos.Rareza(parte, o);
+                Color colorRareza = Cosmeticos.Origen(parte, o) == Cosmeticos.BASICO ? Paleta.Gris : Tienda.ColorRareza[rareza];
+
+                Pixel.Panel(g, c.X, c.Y, c.Width, c.Height, puesto ? Paleta.Oro : Paleta.Crema);
+                if (puesto) Pixel.R(g, c.X + 10, c.Y + 10, c.Width - 20, c.Height - 20, Paleta.Crema);
+                Pixel.R(g, c.X + 27, c.Y + 14, 104, 104, colorRareza);
+                Pixel.Sprite(g, vistas[k], c.X + 31, c.Y + 18, 6);
+                Pixel.Parrafo(g, Cosmeticos.Nombre(parte, o), new Rectangle(c.X + 8, c.Y + 126, c.Width - 16, 40), 8, Paleta.Noche, StringAlignment.Center);
+                string origen = Cosmeticos.NombresOrigen[Cosmeticos.Origen(parte, o)];
+                Pixel.Texto(g, puesto ? "PUESTO" : origen, c.X + 79, c.Y + 184, 8, puesto ? Paleta.Verde2 : colorRareza, StringAlignment.Center);
+            }
+            Pixel.Texto(g, $"{pagina + 1}/{Paginas}", 574, 650, 12, Paleta.Crema);
+            Pixel.Texto(g, $"{numTuyos}/{Cosmeticos.Cantidad(parte)}", 574, 682, 9, Paleta.Tenue);
         }
 
         private void Pestana_Click(object sender, EventArgs e)
         {
             parte = (int)((BotonPixel)sender).Tag;
-            aviso = "";
+            pagina = 0;
             Recursos.Sonar("menu");
             Refrescar();
         }
@@ -129,33 +141,13 @@ namespace PrograProyectoFinal
         protected override void OnMouseClick(MouseEventArgs e)
         {
             base.OnMouseClick(e);
-            for (int o = 0; o < Avatar.Opciones[parte].Length; o++)
+            for (int k = 0; k < POR_PAGINA; k++)
             {
-                if (!Casilla(o).Contains(e.Location)) continue;
-
-                if (!perfil.LoTiene(parte, o))
-                {
-                    string razon = perfil.Nivel < Perfil.Niveles[parte][o] || perfil.Monedas < Perfil.Precios[parte][o]
-                        ? perfil.Comprar(parte, o) : null;
-                    if (razon != null)
-                    {
-                        aviso = razon;
-                        Recursos.Sonar("error");
-                        Invalidate();
-                        return;
-                    }
-                    if (!FormAviso.Preguntar(this, "¿LO COMPRAS?", $"{Avatar.Opciones[parte][o]} cuesta {Perfil.Precios[parte][o]} monedas. Tienes {perfil.Monedas}.",
-                                             Paleta.Oro, vistas[o]))
-                        return;
-                    perfil.Comprar(parte, o);
-                    Recursos.Sonar("compra");
-                }
-                else
-                    Recursos.Sonar("carta");
-
-                perfil.Avatar.Cambiar(parte, o);
+                int n = pagina * POR_PAGINA + k;
+                if (n >= numTuyos || !Casilla(k).Contains(e.Location)) continue;
+                perfil.Avatar.Cambiar(parte, tuyos[n]);
                 perfil.Personalizado = true;
-                aviso = "";
+                Recursos.Sonar("carta");
                 Perfiles.Guardar();
                 Refrescar();
                 return;
@@ -166,8 +158,8 @@ namespace PrograProyectoFinal
         {
             base.OnMouseMove(e);
             bool sobre = false;
-            for (int o = 0; o < Avatar.Opciones[parte].Length; o++)
-                if (Casilla(o).Contains(e.Location)) sobre = true;
+            for (int k = 0; k < POR_PAGINA; k++)
+                if (pagina * POR_PAGINA + k < numTuyos && Casilla(k).Contains(e.Location)) sobre = true;
             Cursor = sobre ? Cursors.Hand : Cursors.Default;
         }
 
@@ -178,7 +170,7 @@ namespace PrograProyectoFinal
             for (int p = 0; p < Avatar.PARTES; p++)
             {
                 int o;
-                do o = azar.Next(Avatar.Opciones[p].Length);
+                do o = azar.Next(Cosmeticos.Cantidad(p));
                 while (!perfil.LoTiene(p, o));
                 perfil.Avatar.Cambiar(p, o);
             }

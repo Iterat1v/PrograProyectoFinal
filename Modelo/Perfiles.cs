@@ -13,8 +13,10 @@ namespace PrograProyectoFinal
         public static Perfil Activo { get; set; }
         public static string NombreActivo => Activo?.Nombre ?? "";
 
+        // Los programas de prueba ponen CONCESIONARIO_DATOS para usar otra carpeta y no tocar la del jugador
         public static string Ruta => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Concesionario", "perfiles.txt");
+            Environment.GetEnvironmentVariable("CONCESIONARIO_DATOS") ??
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Concesionario"), "perfiles.txt");
 
         // Lee el archivo línea por línea con StreamReader
         public static void Cargar()

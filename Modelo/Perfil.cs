@@ -1,40 +1,17 @@
 namespace PrograProyectoFinal
 {
-    // Lo que se guarda de cada jugador en la compu: nivel, monedas, personaje y lo que compró
+    // Lo que se guarda de cada jugador en la compu: nivel, monedas, personaje, lo que tiene,
+    // logros, misiones, racha del reto y su avance en el pase de temporada
     internal class Perfil
     {
         public const int XP_POR_NIVEL = 300;
-
-        // Precio y nivel de cada opción de la tienda: [parte][opción]
-        public static readonly int[][] Precios =
-        {
-            new[] { 0, 0, 0, 0, 0, 300, 300 },
-            new[] { 0, 0, 0, 0, 80, 120, 150, 800 },
-            new[] { 0, 0, 0, 0, 40, 40, 100, 100, 100, 300 },
-            new[] { 0, 0, 0, 0, 0, 50, 50, 50, 80, 250 },
-            new[] { 0, 0, 80, 120, 150, 200, 500 },
-            new[] { 0, 60, 100, 150, 200, 250, 400, 1000 },
-            new[] { 0, 40, 200, 300, 300, 250, 450 },
-            new[] { 0, 30, 50, 60, 80, 40, 350, 150 }
-        };
-        public static readonly int[][] Niveles =
-        {
-            new[] { 1, 1, 1, 1, 1, 3, 3 },
-            new[] { 1, 1, 1, 1, 1, 2, 2, 5 },
-            new[] { 1, 1, 1, 1, 1, 1, 2, 2, 2, 4 },
-            new[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 3 },
-            new[] { 1, 1, 1, 1, 2, 2, 4 },
-            new[] { 1, 1, 1, 2, 2, 2, 3, 6 },
-            new[] { 1, 1, 2, 2, 2, 2, 3 },
-            new[] { 1, 1, 1, 1, 1, 1, 3, 2 }
-        };
 
         private string nombre;
         private int xp = 0;
         private int monedas = 100;       // para que puedas comprar algo desde el inicio
         private bool personalizado = false;
         private Avatar avatar = new Avatar();
-        private bool[,] comprado = new bool[Avatar.PARTES, 10];
+        private bool[,] comprado = new bool[Avatar.PARTES, Cosmeticos.MAX];      // lo que tiene en su casillero
 
         // Logros, misiones del día, racha del reto y si ya vio el tutorial
         private bool[] logros = new bool[Logros.CANTIDAD];
@@ -44,6 +21,12 @@ namespace PrograProyectoFinal
         private int ultimoReto = 0;
         private int racha = 0;
         private bool tutorialVisto = false;
+
+        // Pase de temporada
+        private int paseXp = 0;
+        private bool pasePremium = false;
+        private bool[] reclamadoGratis = new bool[Pase.NIVELES + 1];
+        private bool[] reclamadoPremium = new bool[Pase.NIVELES + 1];
 
         public Perfil(string nombre)
         {
@@ -98,30 +81,25 @@ namespace PrograProyectoFinal
 
         public bool LoTiene(int parte, int opcion)
         {
-            return Precios[parte][opcion] == 0 || comprado[parte, opcion];
+            return Cosmeticos.Origen(parte, opcion) == Cosmeticos.BASICO || comprado[parte, opcion];
         }
 
-        // Regresa null si se compró; si no, por qué no
-        public string Comprar(int parte, int opcion)
+        // Lo que se gana en el pase entra directo al casillero
+        public void Dar(int parte, int opcion) => comprado[parte, opcion] = true;
+
+        public int CuantosTiene(int parte)
         {
-            if (LoTiene(parte, opcion))
-                return "Ya lo tienes.";
-            if (Nivel < Niveles[parte][opcion])
-                return $"Se desbloquea en el nivel {Niveles[parte][opcion]}.";
-            if (monedas < Precios[parte][opcion])
-                return $"Te faltan {Precios[parte][opcion] - monedas} monedas.";
-            monedas -= Precios[parte][opcion];
-            comprado[parte, opcion] = true;
-            return null;
+            int n = 0;
+            for (int o = 0; o < Cosmeticos.Cantidad(parte); o++)
+                if (LoTiene(parte, o)) n++;
+            return n;
         }
 
-        // Compra en la tienda del día (puede venir con descuento)
+        // Compra en la tienda del día (puede venir con descuento). Regresa null si se compró.
         public string ComprarA(int parte, int opcion, int precio)
         {
             if (LoTiene(parte, opcion))
                 return "Ya lo tienes.";
-            if (Nivel < Niveles[parte][opcion])
-                return $"Se desbloquea en el nivel {Niveles[parte][opcion]}.";
             if (monedas < precio)
                 return $"Te faltan {precio - monedas} monedas.";
             monedas -= precio;
@@ -134,12 +112,35 @@ namespace PrograProyectoFinal
         {
             int antes = Nivel;
             xp += xpGanada;
+            paseXp += xpGanada;          // la misma XP sube el pase
             monedas += monedasGanadas;
             return Nivel > antes;
         }
 
+        // ----- pase -----
+        public int PaseXp => paseXp;
+        public int NivelPase => Math.Min(Pase.NIVELES, paseXp / Pase.XP_POR_NIVEL);
+        public bool PasePremium => pasePremium;
+        public bool Reclamado(bool premium, int nivel) => premium ? reclamadoPremium[nivel] : reclamadoGratis[nivel];
+        public void MarcarReclamado(bool premium, int nivel)
+        {
+            if (premium) reclamadoPremium[nivel] = true; else reclamadoGratis[nivel] = true;
+        }
+
+        public string ComprarPremium()
+        {
+            if (pasePremium) return "Ya tienes el pase premium.";
+            if (monedas < Pase.PRECIO_PREMIUM) return $"Te faltan {Pase.PRECIO_PREMIUM - monedas} monedas.";
+            monedas -= Pase.PRECIO_PREMIUM;
+            pasePremium = true;
+            return null;
+        }
+
+        public void GastarMonedas(int cuantas) => monedas -= cuantas;
+
         // ----- archivo: una línea por perfil -----
-        // nombre;xp;monedas;personalizado;avatar;comprados;logros;fechaMisiones;progreso;cobradas;ultimoReto;racha;tutorial
+        // nombre;xp;monedas;personalizado;avatar;comprados;logros;fechaMisiones;progreso;cobradas;ultimoReto;racha;tutorial;
+        // paseXp;premium;reclamadosGratis;reclamadosPremium
         // (los archivos viejos solo tienen los 6 primeros campos y también se leen)
         public string ALinea()
         {
@@ -147,7 +148,7 @@ namespace PrograProyectoFinal
             for (int p = 0; p < Avatar.PARTES; p++)
             {
                 if (p > 0) compras += "|";
-                for (int o = 0; o < Avatar.Opciones[p].Length; o++)
+                for (int o = 0; o < Cosmeticos.Cantidad(p); o++)
                     compras += comprado[p, o] ? "1" : "0";
             }
             string textoLogros = "";
@@ -156,8 +157,15 @@ namespace PrograProyectoFinal
             string cobradas = "";
             for (int k = 0; k < cobrada.Length; k++)
                 cobradas += cobrada[k] ? "1" : "0";
+            string gratis = "", premium = "";
+            for (int n = 0; n <= Pase.NIVELES; n++)
+            {
+                gratis += reclamadoGratis[n] ? "1" : "0";
+                premium += reclamadoPremium[n] ? "1" : "0";
+            }
             return $"{nombre};{xp};{monedas};{(personalizado ? 1 : 0)};{avatar};{compras};" +
-                   $"{textoLogros};{fechaMisiones};{progreso[0]},{progreso[1]},{progreso[2]};{cobradas};{ultimoReto};{racha};{(tutorialVisto ? 1 : 0)}";
+                   $"{textoLogros};{fechaMisiones};{progreso[0]},{progreso[1]},{progreso[2]};{cobradas};{ultimoReto};{racha};{(tutorialVisto ? 1 : 0)};" +
+                   $"{paseXp};{(pasePremium ? 1 : 0)};{gratis};{premium}";
         }
 
         public static Perfil DesdeLinea(string linea)
@@ -171,7 +179,7 @@ namespace PrograProyectoFinal
             p.avatar = Avatar.DesdeTexto(campos[4]);
             string[] partes = campos[5].Split('|');
             for (int i = 0; i < Avatar.PARTES && i < partes.Length; i++)
-                for (int o = 0; o < partes[i].Length && o < 10; o++)
+                for (int o = 0; o < partes[i].Length && o < Cosmeticos.Cantidad(i); o++)
                     p.comprado[i, o] = partes[i][o] == '1';
 
             if (campos.Length >= 13)
@@ -187,6 +195,15 @@ namespace PrograProyectoFinal
                 int.TryParse(campos[10], out p.ultimoReto);
                 int.TryParse(campos[11], out p.racha);
                 p.tutorialVisto = campos[12] == "1";
+            }
+            if (campos.Length >= 17)
+            {
+                int.TryParse(campos[13], out p.paseXp);
+                p.pasePremium = campos[14] == "1";
+                for (int n = 0; n < campos[15].Length && n < p.reclamadoGratis.Length; n++)
+                    p.reclamadoGratis[n] = campos[15][n] == '1';
+                for (int n = 0; n < campos[16].Length && n < p.reclamadoPremium.Length; n++)
+                    p.reclamadoPremium[n] = campos[16][n] == '1';
             }
             return p;
         }

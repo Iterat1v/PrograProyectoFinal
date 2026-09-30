@@ -51,7 +51,7 @@ namespace PrograProyectoFinal
             if (k < Tienda.DESTACADOS)
                 return new Rectangle(40 + k * 304, 138, 290, 496);
             int d = k - Tienda.DESTACADOS;
-            return new Rectangle(660 + (d % 4) * 148, 138 + (d / 4) * 254, 140, 242);
+            return new Rectangle(660 + (d % 4) * 148, 138 + (d / 4) * 266, 140, 230);
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -70,11 +70,19 @@ namespace PrograProyectoFinal
             Pixel.Texto(g, "DESTACADO", 40, 120, 14, Paleta.Crema);
             Pixel.Texto(g, $"-{Tienda.DESCUENTO * 100:0} % SOLO HOY", 620, 120, 10, Paleta.Rosa, StringAlignment.Far);
             Pixel.Texto(g, "DIARIO", 660, 120, 14, Paleta.Crema);
+            if (Tienda.NumTemporada > 0)
+            {
+                // franja de la temporada encima de sus tarjetas
+                Rectangle primera = Tarjeta(Tienda.PrimeroTemporada);
+                int ancho = 1240 - primera.X;
+                Pixel.R(g, primera.X - 4, 376, ancho + 4, 22, Paleta.Oro);
+                Pixel.Texto(g, $"DE TEMPORADA · {Cosmeticos.NombresTemporada[Tienda.Temporada]}", primera.X + 4, 387, 9, Paleta.Noche);
+            }
 
             for (int k = 0; k < TOTAL; k++)
                 DibujarTarjeta(g, k, Tarjeta(k), k < Tienda.DESTACADOS);
 
-            Pixel.Parrafo(g, aviso != "" ? aviso : "Clic en un artículo para comprarlo. Lo que ya tienes te lo pones desde el CASILLERO.",
+            Pixel.Parrafo(g, aviso != "" ? aviso : "Todo lo de aquí es exclusivo de la tienda: no sale en el pase. Lo que compras te lo pones en el CASILLERO.",
                           new Rectangle(40, 648, 940, 60), 11, aviso != "" ? Paleta.Rosa : Paleta.Tenue);
         }
 
@@ -85,8 +93,6 @@ namespace PrograProyectoFinal
             Color color = Tienda.ColorRareza[rareza];
             Color oscuro = Tienda.ColorRarezaOscuro[rareza];
             bool tuyo = perfil.LoTiene(parte, opcion);
-            int nivel = Perfil.Niveles[parte][opcion];
-            bool bloqueado = !tuyo && perfil.Nivel < nivel;
 
             // marco (dorado si el mouse está encima)
             Pixel.R(g, t.X - 4, t.Y - 4, t.Width + 8, t.Height + 8, k == encima ? Paleta.Oro : Paleta.Negro);
@@ -123,8 +129,6 @@ namespace PrograProyectoFinal
             int yp = yb + (grande ? 100 : 70);
             if (tuyo)
                 Pixel.Texto(g, "¡YA ES TUYO!", t.X + 12, yp, grande ? 13 : 8, Paleta.Verde);
-            else if (bloqueado)
-                Pixel.Texto(g, $"NIVEL {nivel}", t.X + 12, yp, grande ? 13 : 9, Paleta.Tenue);
             else
             {
                 Pixel.Sprite(g, Recursos.Moneda, t.X + 10, yp - (grande ? 14 : 9), grande ? 3.5f : 2.2f);
@@ -153,9 +157,6 @@ namespace PrograProyectoFinal
                 for (int i = 0; i < palomita.GetLength(0); i++)
                     Pixel.R(g, cx + palomita[i, 0] * s, cy + palomita[i, 1] * s - s, s, s * 2, Paleta.Noche);
             }
-            if (bloqueado)
-                using (SolidBrush velo = new SolidBrush(Color.FromArgb(90, 18, 8, 24)))
-                    g.FillRectangle(velo, t.X, t.Y, t.Width, yb - t.Y);
         }
 
         protected override void OnMouseMove(MouseEventArgs e)
@@ -188,7 +189,7 @@ namespace PrograProyectoFinal
                 return;
             }
             int precio = Tienda.Precio(k);
-            string razon = perfil.Nivel < Perfil.Niveles[parte][opcion] || perfil.Monedas < precio ? perfil.ComprarA(parte, opcion, precio) : null;
+            string razon = perfil.Monedas < precio ? perfil.ComprarA(parte, opcion, precio) : null;
             if (razon != null)
             {
                 aviso = razon;
