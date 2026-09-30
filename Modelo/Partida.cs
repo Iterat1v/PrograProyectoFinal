@@ -369,10 +369,12 @@ namespace PrograProyectoFinal
         public double OfertaPrecio { get; private set; }
         public string OfertaSenor { get; private set; }
 
-        // 1 de cada 5 turnos llega un señor que quiere vender su coche barato
+        // 1 de cada 5 turnos llega un señor que quiere vender su coche barato.
+        // Si tu lote está vacío es más seguido (3 de cada 5), para que no te quedes sin nada.
         public bool HayOferta()
         {
-            if (azar.Next(5) != 0) return false;
+            int probabilidad = JugadorActual.NumAutos == 0 ? 60 : 20;
+            if (azar.Next(100) >= probabilidad) return false;
             int c = azar.Next(cochesSenor.GetLength(0));
             int tipo = azar.Next(3);
             double valor = Math.Round((50000 + azar.Next(150000)) / 5000.0) * 5000;
@@ -489,6 +491,7 @@ namespace PrograProyectoFinal
             // Reto del día: cada día arranca desde la misma semilla para todos
             if (semilla != 0)
                 azar = new Random(semilla * 7 + Dia);
+            SurtirMercado();
             for (int i = 0; i < numJugadores; i++)
                 estafasHoy[i] = 0;
 
@@ -518,6 +521,34 @@ namespace PrograProyectoFinal
                 while (evento == anterior);
             }
             AplicarEvento();
+        }
+
+        // ----- El mercado se surte cada mañana -----
+        // Los autos que ya se vendieron a clientes (no están en ningún lote) regresan
+        // al mercado como seminuevos, con otro color y a veces chocados.
+        public int AutosNuevos { get; private set; }
+
+        private bool EnAlgunLote(Auto auto)
+        {
+            for (int i = 0; i < numJugadores; i++)
+                for (int k = 0; k < jugadores[i].NumAutos; k++)
+                    if (jugadores[i].ObtenerAuto(k) == auto) return true;
+            return false;
+        }
+
+        private void SurtirMercado()
+        {
+            AutosNuevos = 0;
+            for (int i = 0; i < catalogo.Length; i++)
+            {
+                Auto auto = catalogo[i];
+                if (auto.Disponible || EnAlgunLote(auto) || azar.Next(100) >= 70) continue;
+                auto.Disponible = true;
+                auto.Color = azar.Next(8);
+                auto.Estado = azar.Next(4) == 0 ? Auto.CHOCADO : Auto.NORMAL;
+                auto.Costo = 0;
+                AutosNuevos++;
+            }
         }
 
         // Cuenta los votos (arreglo con cuántos votos tuvo cada opción) y aplica el ganador

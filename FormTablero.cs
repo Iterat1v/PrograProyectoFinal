@@ -84,13 +84,15 @@ namespace PrograProyectoFinal
                     Recursos.Sonar("turno");
                     string texto = partida.Ronda == 1 ? "¡Abrimos el lote! Cada día tiene 2 turnos: mañana y tarde. Compren autos en el MERCADO y a vender."
                                                       : "Día normal. Ni terremotos ni zombies: puro vender.";
+                    if (partida.AutosNuevos > 0) texto += $" Llegaron {partida.AutosNuevos} autos al mercado.";
                     FormAviso.Mostrar(this, titulo, texto, Paleta.Agua);
                 }
                 else
                 {
                     Recursos.Sonar("evento");
                     if (ev == Partida.TERREMOTO) Sacudir();
-                    FormAviso.Mostrar(this, $"{titulo}: {Partida.NombresEvento[ev]}", Partida.DescripcionesEvento[ev], ColorEvento(ev));
+                    string extra = partida.AutosNuevos > 0 ? $" Además llegaron {partida.AutosNuevos} autos al mercado." : "";
+                    FormAviso.Mostrar(this, $"{titulo}: {Partida.NombresEvento[ev]}", Partida.DescripcionesEvento[ev] + extra, ColorEvento(ev));
                 }
             }
             else

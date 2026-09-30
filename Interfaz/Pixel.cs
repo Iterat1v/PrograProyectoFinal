@@ -186,8 +186,11 @@ namespace PrograProyectoFinal
             return $"${cantidad:N0}";
         }
 
+        // $98k, y a partir del millón $1.29M
         public static string DineroCorto(double cantidad)
         {
+            if (Math.Abs(cantidad) >= 1000000)
+                return $"${cantidad / 1000000:0.00}M";
             return $"${cantidad / 1000:N0}k";
         }
     }
