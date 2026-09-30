@@ -10,16 +10,25 @@ namespace PrograProyectoFinal
         private string titulo;
         private bool ganoSemana = false;        // modo historia
 
+        // Avisos que salen al abrir la pantalla: misiones, logros, récords, temporada...
+        private string[] avisosTitulo = new string[20];
+        private string[] avisosTexto = new string[20];
+        private Color[] avisosColor = new Color[20];
+        private int numAvisos = 0;
+
         internal FormResultados(Partida partida)
         {
             InitializeComponent();
             this.partida = partida;
+            partida.CerrarRegistro();
             ranking = partida.Ranking();
             DarRecompensas();
             Guardado.Borrar();          // la partida ya terminó: ya no hay qué continuar
             btnRevancha.Colores(Paleta.Oro, Paleta.Oro2);
             btnNueva.Colores(Paleta.Verde, Paleta.Verde2);
             btnSalir.Colores(Paleta.Rosa, Paleta.Rosa2);
+            btnSalir.Text = "LOBBY";
+            if (partida.EsReto) btnNueva.Text = "VER EL RETO";
             titulo = $"¡GANÓ {ranking[0].Jugador.ToUpper()}!";
 
             // Modo historia: ¿le ganaste al jefe?
@@ -35,6 +44,11 @@ namespace PrograProyectoFinal
                     h.Reputacion = tu.Reputacion;
                     h.GanoSemana();
                     h.Guardar();
+                    if (h.Terminada && Logros.Dar(tu.Perfil, Logros.REY_CDMX))
+                    {
+                        Perfiles.Guardar();
+                        Avisar("¡LOGRO DESBLOQUEADO!", $"{tu.Jugador}: {Logros.Nombres[Logros.REY_CDMX]} (+{Logros.MONEDAS} monedas).", Paleta.Oro);
+                    }
                     titulo = h.Terminada ? "¡ERES EL REY DE LA CDMX!" : $"¡GANASTE LA SEMANA {h.Semana}!";
                     btnRevancha.Text = h.Terminada ? "VER EL FINAL" : "SIGUIENTE SEMANA";
                 }
@@ -50,6 +64,25 @@ namespace PrograProyectoFinal
             if (partida.MejorEstafaUsuario != null)
                 Boton("REPETICIÓN", 40, 440, 250, 60, Paleta.Rosa, Paleta.Rosa2,
                       (s, e) => { using (FormRepeticion r = new FormRepeticion(partida)) r.ShowDialog(this); }, 11);
+
+            // Gráfica de cómo le fue a cada quien día por día
+            Boton("GRÁFICA", 1010, 110, 230, 56, Paleta.Agua, Paleta.Agua2,
+                  (s, e) => { using (FormGrafica gr = new FormGrafica(partida)) gr.ShowDialog(this); }, 12);
+
+            Shown += (s, e) =>
+            {
+                for (int i = 0; i < numAvisos; i++)
+                    FormAviso.Mostrar(this, avisosTitulo[i], avisosTexto[i], avisosColor[i]);
+            };
+        }
+
+        private void Avisar(string titulo, string texto, Color color)
+        {
+            if (numAvisos == avisosTitulo.Length) return;
+            avisosTitulo[numAvisos] = titulo;
+            avisosTexto[numAvisos] = texto;
+            avisosColor[numAvisos] = color;
+            numAvisos++;
         }
 
         protected override void OnPaint(PaintEventArgs e)
@@ -151,6 +184,38 @@ namespace PrograProyectoFinal
                 }
                 subio[i] = j.Perfil.Ganar(xp, monedas);
                 recompensas[i] = $"+{xp} XP  +{monedas} monedas";
+
+                bool gano = i == 0 && !j.Rendido;
+                string misiones = Misiones.Contar(j, gano, partida.EsReto);
+                if (misiones != "")
+                    Avisar("¡MISIÓN CUMPLIDA!", $"{j.Jugador}: {misiones}", Paleta.Verde);
+                string logros = Logros.Revisar(j, partida, gano);
+                if (logros != "")
+                    Avisar("¡LOGRO DESBLOQUEADO!", $"{j.Jugador}: {logros} (+{Logros.MONEDAS} monedas c/u).", Paleta.Oro);
+
+                if (!j.Rendido)
+                {
+                    string modo = partida.EsReto ? "RETO DEL DÍA"
+                                : partida.Historia != null ? $"HISTORIA · {Partida.Zonas[partida.Zona]}"
+                                : $"LIBRE · {Partida.Zonas[partida.Zona]} · {Partida.NombresDificultad[partida.Dificultad]}";
+                    int lugar = Records.Agregar(j.Jugador, j.Patrimonio(), modo);
+                    if (lugar > 0)
+                        Avisar("¡NUEVO RÉCORD!", $"{j.Jugador} entró al TOP 10 histórico en el lugar {lugar} con {Pixel.Dinero(j.Patrimonio())}.", Paleta.Agua);
+                }
+                if (partida.EsReto)
+                {
+                    Reto.Registrar(j.Jugador, j.Rendido ? 0 : j.Patrimonio());
+                    int premio = Reto.ActualizarRacha(j.Perfil);
+                    Avisar("RETO DEL DÍA", premio > 0
+                        ? $"Terminaste con {Pixel.Dinero(j.Patrimonio())}. Racha de {j.Perfil.Racha} {(j.Perfil.Racha == 1 ? "día" : "días")}: +{premio} monedas. Mañana hay reto nuevo."
+                        : $"Terminaste con {Pixel.Dinero(j.Patrimonio())}. Ya habías jugado hoy: solo cuenta tu mejor marca.", Paleta.Agua);
+                }
+            }
+            if (partida.EsLibre)
+            {
+                string liga = Temporada.RegistrarPartida(ranking);
+                if (liga != null)
+                    Avisar($"TEMPORADA · {Temporada.Nombres[Temporada.TemaActual]}", liga, Paleta.Oro);
             }
             Perfiles.Guardar();
         }
@@ -175,12 +240,12 @@ namespace PrograProyectoFinal
                 IrA(new FormHistoria(partida.Historia));
                 return;
             }
-            IrA(new FormRegistro());
+            IrA(partida.EsReto ? new FormReto() : new FormModo());
         }
 
         private void btnSalir_Click(object sender, EventArgs e)
         {
-            Application.Exit();
+            IrA(new FormLobby());
         }
     }
 }

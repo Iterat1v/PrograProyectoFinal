@@ -13,6 +13,11 @@ namespace PrograProyectoFinal
         private int pasoBot = 0;                   // en qué va el bot en su turno
         private BotonPixel btnOficina;
 
+        // Letrero grande de "TURNO DE ..." que aparece al empezar cada turno
+        private string letrero = "";
+        private int letreroVida = 0;
+        private System.Windows.Forms.Timer timerLetrero = new System.Windows.Forms.Timer { Interval = 40 };
+
         // Texto que sube flotando cuando entra dinero ("+$127,000")
         private string flotante = "";
         private int flotanteY = 0;
@@ -29,6 +34,13 @@ namespace PrograProyectoFinal
             btnAnterior.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnSiguiente.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnOficina = Boton("OFICINA", 874, 12, 116, 62, Paleta.Agua, Paleta.Agua2, btnOficina_Click, 9);
+            Boton("?", 800, 12, 62, 62, Paleta.LilaClaro, Paleta.Crema2, (s, e) => MostrarTutorial(), 15);
+            timerLetrero.Tick += (s, e) =>
+            {
+                letreroVida--;
+                if (letreroVida <= 0) timerLetrero.Stop();
+                Invalidate(new Rectangle(0, 250, Pixel.ANCHO, 180));
+            };
 
             partida.NuevoCliente();
             NuevoTurno();
@@ -54,6 +66,7 @@ namespace PrograProyectoFinal
         private void Avisos()
         {
             Concesionario jugador = partida.JugadorActual;
+            CambioDeTurno(jugador);
 
             // Una vez por partida: todos votan el evento del día
             if (partida.VotacionPendiente)
@@ -132,7 +145,88 @@ namespace PrograProyectoFinal
             if (jugador.PierdeTurno)
                 FormAviso.Mostrar(this, "PIERDES EL TURNO", "Alguien te lanzó \"¿Por qué tan caro?\" y tu cliente se fue. Solo puedes PASAR TURNO.",
                                   Paleta.Rosa, Recursos.Clientes[partida.ClienteActual?.Retrato ?? 0]);
+
+            // La primera vez que una persona juega, se le enseña el tutorial
+            if (jugador.Perfil != null && !jugador.Perfil.TutorialVisto)
+            {
+                MostrarTutorial();
+                jugador.Perfil.TutorialVisto = true;
+                Perfiles.Guardar();
+            }
             Actualizar();
+        }
+
+        // Tutorial: foto de la pantalla oscurecida y se ilumina cada parte con su globo
+        private void MostrarTutorial()
+        {
+            letreroVida = 0;
+            Actualizar();
+            Update();
+            Bitmap foto = new Bitmap(Pixel.ANCHO, Pixel.ALTO);
+            DrawToBitmap(foto, new Rectangle(0, 0, Pixel.ANCHO, Pixel.ALTO));
+            Rectangle[] zonas =
+            {
+                new Rectangle(0, 0, 800, 84), new Rectangle(20, 104, 380, 404), btnMercado.Bounds,
+                new Rectangle(420, 104, 500, 380), btnVender.Bounds, new Rectangle(20, 508, 380, 108),
+                new Rectangle(940, 104, 320, 512), btnOficina.Bounds, btnPasar.Bounds
+            };
+            string[] titulos = { "EL DÍA Y TU LANA", "MI LOTE", "MERCADO", "EL CLIENTE", "VENDER Y REGATEAR", "TUS CARTAS", "RANKING", "OFICINA", "PASAR TURNO" };
+            string[] textos =
+            {
+                $"Son {Partida.DIAS} días y cada día tiene 2 turnos: mañana y tarde. Arriba ves de quién es el turno, tu reputación (REP) y tu dinero.",
+                "Aquí están tus autos. Dale clic a uno para escogerlo. Con uno escogido aparece TALLER: reparar, tunear o rematar.",
+                "Compra autos para tu lote. Los CHOCADOS salen a mitad de precio, pero hay que repararlos o bajan tu reputación.",
+                "Cada turno llega un cliente: te dice qué tipo de auto busca y cuánto trae. Si lo quiere de otro color, pintarlo cuesta $10,000.",
+                $"Escoge un auto y dale VENDER. Tú pones el precio y el cliente regatea: tienes {partida.IntentosMaximos} intentos antes de que se vaya.",
+                "Tus ABILICARDS salen boca abajo para que nadie las vea. REGATEO te ayuda, ESTAFA le pega a un rival y ASEGURADORA te protege.",
+                "Gana el que termine con más patrimonio: dinero + lo que valen tus autos − lo que debes.",
+                "En la OFICINA pides préstamos (banco o compadre) y contratas vendedor o mecánico.",
+                "Cuando acabes, PASA EL TURNO. Con MENÚ o Esc pausas. El botón ? vuelve a abrir este tutorial."
+            };
+            using (FormTutorial tutorial = new FormTutorial(foto, zonas, titulos, textos))
+            {
+                tutorial.StartPosition = FormStartPosition.Manual;
+                tutorial.Location = Location;
+                tutorial.ShowDialog(this);
+            }
+            foto.Dispose();
+        }
+
+        // Cuántas personas (no bots) siguen jugando
+        private int Personas()
+        {
+            int n = 0;
+            for (int i = 0; i < partida.NumJugadores; i++)
+                if (!partida.ObtenerJugador(i).EsBot && !partida.ObtenerJugador(i).Rendido) n++;
+            return n;
+        }
+
+        // Letrero "TURNO DE ..." en cada turno. Si juegan varias personas en la misma compu,
+        // además sale un aviso para que se pasen la compu sin ver lo del otro.
+        private void CambioDeTurno(Concesionario jugador)
+        {
+            letrero = jugador.EsBot ? $"TURNO DE {jugador.Jugador.ToUpper()}" : $"¡TE TOCA, {jugador.Jugador.ToUpper()}!";
+            letreroVida = 30;
+            timerLetrero.Start();
+            Invalidate();
+            if (!jugador.EsBot && Personas() > 1)
+            {
+                Recursos.Sonar("turno");
+                FormAviso.Mostrar(this, $"TURNO DE {jugador.Jugador.ToUpper()}",
+                                  $"Pásale la compu a {jugador.Jugador}. Los demás no se asomen a sus cartas. Dale OK cuando esté listo.",
+                                  Paleta.Agua, Recursos.Cara(jugador));
+            }
+        }
+
+        private void DibujarLetrero(Graphics g)
+        {
+            if (letreroVida <= 0 || letrero == "") return;
+            // entra deslizándose desde la izquierda y se queda
+            int avance = Math.Min(30 - letreroVida, 6);
+            int x = -Pixel.ANCHO + avance * Pixel.ANCHO / 6;
+            Pixel.R(g, x, 294, Pixel.ANCHO, 92, Paleta.Negro);
+            Pixel.R(g, x, 300, Pixel.ANCHO, 80, Paleta.Rosa);
+            Pixel.SombraTexto(g, letrero, x + 640, 338, 44, Paleta.Oro, Paleta.Rosa2);
         }
 
         private static Color ColorEvento(int evento)
@@ -255,7 +349,7 @@ namespace PrograProyectoFinal
             Pixel.R(g, 582, 58, 140 * jugador.Reputacion / 100, 8, colorRep);
             Pixel.Texto(g, $"{jugador.Reputacion}", 732, 62, 8, colorRep);
             if (jugador.DeudaBanco + jugador.DeudaCompadre > 0)
-                Pixel.Texto(g, $"debes {Pixel.DineroCorto(jugador.DeudaBanco + jugador.DeudaCompadre)}", 772, 62, 8, Paleta.Rosa);
+                Pixel.Texto(g, $"debes {Pixel.DineroCorto(jugador.DeudaBanco + jugador.DeudaCompadre)}", 1046, 68, 8, Paleta.Rosa);
             Pixel.Sprite(g, Recursos.Moneda, 1002, 22, 6);
             Pixel.Texto(g, Pixel.Dinero(jugador.Dinero), 1046, 40, 15, Paleta.Oro);
 
@@ -324,8 +418,8 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, "(nadie)", 568, 452, 13, Paleta.Tenue, StringAlignment.Center);
             }
 
-            Pixel.Globo(g, 688, 176, 216, 192);
-            DibujarDialogo(g, new Rectangle(712, 194, 180, 166));
+            Pixel.Globo(g, 684, 170, 228, 238);
+            DibujarDialogo(g, new Rectangle(704, 186, 196, 214));
 
             // ----- ranking -----
             Pixel.Panel(g, 940, 104, 320, 512, Paleta.Crema);
@@ -350,6 +444,7 @@ namespace PrograProyectoFinal
                 }
             }
             DibujarFlotante(g);
+            DibujarLetrero(g);
         }
 
         private void DibujarFlotante(Graphics g)
@@ -381,11 +476,11 @@ namespace PrograProyectoFinal
         // Si el texto no cabe en el globo, se hace más chiquita la letra
         private void DibujarDialogo(Graphics g, Rectangle area)
         {
-            float[] tamanos = { 13, 12, 11, 10 };
+            float[] tamanos = { 13, 12, 11, 10, 9, 8, 7 };
             foreach (float tam in tamanos)
             {
                 SizeF medida = g.MeasureString(dialogo, Recursos.Letra(tam), area.Width);
-                if (medida.Height <= area.Height || tam == 10)
+                if (medida.Height <= area.Height || tam == 7)
                 {
                     Pixel.Parrafo(g, dialogo, area, tam, Paleta.Noche);
                     return;

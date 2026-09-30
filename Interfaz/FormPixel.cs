@@ -64,6 +64,12 @@ namespace PrograProyectoFinal
             return b;
         }
 
+        // Botón "< REGRESAR" en la barra de arriba (todas las pantallas lo tienen en el mismo lugar)
+        protected BotonPixel BotonRegresar(EventHandler clic)
+        {
+            return Boton("< REGRESAR", 900, 6, 210, 44, Paleta.Crema, Paleta.Crema2, clic, 10);
+        }
+
         // La ventana tiembla (terremoto, estafas): un Timer la mueve de un lado a otro
         public void Sacudir()
         {

@@ -5,7 +5,7 @@ namespace PrograProyectoFinal
     // Autoguardado de la partida en curso: %AppData%\Concesionario\partida.txt
     // Se escribe al empezar cada turno y se borra cuando termina la partida.
     // Cada línea empieza con una letra que dice qué es: P partida, V visitas,
-    // C catálogo, J jugador, A auto de un jugador, K carta de un jugador.
+    // C catálogo, J jugador, E contadores e historial del jugador, A auto, K carta.
     internal static class Guardado
     {
         private const char S = '|';
@@ -32,7 +32,8 @@ namespace PrograProyectoFinal
                 {
                     int[] op = p.OpcionesVoto;
                     w.WriteLine(string.Join(S, "P", p.Zona, p.Historia?.Nombre ?? "", p.Ronda, p.Turno, p.Evento,
-                                            p.DiaVotacion, B(p.VotacionPendiente), $"{op[0]},{op[1]},{op[2]}"));
+                                            p.DiaVotacion, B(p.VotacionPendiente), $"{op[0]},{op[1]},{op[2]}",
+                                            p.Semilla, p.Dificultad, p.Tema, p.DiasRegistrados));
                     w.WriteLine(string.Join(S, "V", string.Join(",", p.Visitas),
                                             string.Join(",", Array.ConvertAll(p.UltimaCompra, u => Limpio(u).Replace(",", " "))),
                                             string.Join(",", p.Recuerdo)));
@@ -48,6 +49,9 @@ namespace PrograProyectoFinal
                                                 N(c.DeudaBanco), N(c.DeudaCompadre), c.DiasCompadre, B(c.TieneVendedor), B(c.TieneMecanico),
                                                 c.Ventas, N(c.MejorVenta), Limpio(c.MejorVentaAuto), B(c.Rendido),
                                                 N(c.Descuento), N(c.BonoVenta), B(c.VentaSegura), B(c.ErrorDeCuentas), B(c.Sobreprecio), B(c.PierdeTurno)));
+                        w.WriteLine(string.Join(S, "E", j, c.ChocadosVendidos, c.TuneadosVendidos, c.VentasBro, c.VentasCaras,
+                                                c.EstafasUsadas, c.SubastasGanadas, B(c.PidioPrestamo),
+                                                string.Join(",", Array.ConvertAll(c.Historial, N))));
                         for (int k = 0; k < c.NumAutos; k++)
                         {
                             Auto a = c.ObtenerAuto(k);
@@ -84,10 +88,13 @@ namespace PrograProyectoFinal
                     {
                         case "P":
                             Historia h = c[2] == "" ? null : Historia.Cargar(c[2]);
-                            p = new Partida(int.Parse(c[1]), h);
+                            int semilla = c.Length > 12 ? int.Parse(c[9]) : 0;
+                            p = new Partida(int.Parse(c[1]), h, semilla);
                             string[] op = c[8].Split(',');
                             p.Restaurar(int.Parse(c[3]), int.Parse(c[4]), int.Parse(c[5]), int.Parse(c[6]), c[7] == "1",
                                         new[] { int.Parse(op[0]), int.Parse(op[1]), int.Parse(op[2]) });
+                            if (c.Length > 12)
+                                p.RestaurarExtras(int.Parse(c[10]), int.Parse(c[11]), int.Parse(c[12]));
                             break;
                         case "V":
                             string[] vis = c[1].Split(','), ult = c[2].Split(','), rec = c[3].Split(',');
@@ -125,6 +132,11 @@ namespace PrograProyectoFinal
                                 j.Cara = Recursos.Clientes[Historia.RetratoJefe[p.Historia.Semana]];
                             jugadores[nj++] = j;
                             p.AgregarJugador(j);
+                            break;
+                        case "E":
+                            double[] hist = Array.ConvertAll(c[9].Split(','), x => double.Parse(x, inv));
+                            jugadores[int.Parse(c[1])].RestaurarContadores(int.Parse(c[2]), int.Parse(c[3]), int.Parse(c[4]),
+                                int.Parse(c[5]), int.Parse(c[6]), int.Parse(c[7]), c[8] == "1", hist);
                             break;
                         case "A":
                             int dueno = int.Parse(c[1]), cat = int.Parse(c[2]);

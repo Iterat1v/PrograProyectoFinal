@@ -46,7 +46,7 @@ namespace PrograProyectoFinal
 
         private void btnJugar_Click(object sender, EventArgs e)
         {
-            IrA(new FormModo());
+            IrA(new FormLobby());
         }
 
         private void btnComoSeJuega_Click(object sender, EventArgs e)

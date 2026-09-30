@@ -17,7 +17,7 @@ namespace PrograProyectoFinal
         {
             InitializeComponent();
             this.perfil = perfil;
-            Titulo = $"TU PERSONAJE · TIENDA · {perfil.Nombre.ToUpper()}";
+            Titulo = $"CASILLERO · {perfil.Nombre.ToUpper()}";
             btnAzar.Colores(Paleta.Agua, Paleta.Agua2);
             btnListo.Colores(Paleta.Verde, Paleta.Verde2);
 

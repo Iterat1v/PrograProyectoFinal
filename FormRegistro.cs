@@ -6,21 +6,26 @@ namespace PrograProyectoFinal
         private const int MAX_CARACTERES = 12;
 
         private int zona;
+        private int dificultad;
         private Partida partida;
         private string[] duenos = new string[4];   // quién tiene a cada vendedor (null = libre)
         private int elegido = -1;
         private string aviso = "";                 // mensaje de error en rosa, en vez de MessageBox
 
-        public FormRegistro() : this(0)
+        public FormRegistro() : this(0, Partida.NORMAL)
         {
         }
 
-        public FormRegistro(int zona)
+        public FormRegistro(int zona, int dificultad)
         {
             InitializeComponent();
             this.zona = zona;
+            this.dificultad = dificultad;
             partida = new Partida(zona, null);
-            Titulo = $"¡BIENVENIDO! · ELIGE A TU VENDEDOR · LOTE EN {Partida.Zonas[zona]}";
+            partida.Dificultad = dificultad;
+            Titulo = $"ELIGE A TU VENDEDOR · {Partida.Zonas[zona]} · {Partida.NombresDificultad[dificultad]}";
+            BotonRegresar((s, e) => IrA(new FormModo()));
+            txtNombre.Text = Perfiles.NombreActivo;      // el del lobby ya sale escrito
             txtNombre.Font = Recursos.Letra(17);
             txtNombre.MaxLength = MAX_CARACTERES;
             btnAgregar.Colores(Paleta.Crema, Paleta.Crema2);
@@ -28,6 +33,7 @@ namespace PrograProyectoFinal
             btnJugar.Colores(Paleta.Verde, Paleta.Verde2);
             btnBot.Colores(Paleta.Lila, Paleta.Morado3);
             btnPersonaje.Colores(Paleta.Oro, Paleta.Oro2);
+            btnPersonaje.Text = "TIENDA";
             ElegirPrimeroLibre();
             ActualizarBotones();
         }
@@ -203,20 +209,20 @@ namespace PrograProyectoFinal
             txtNombre.Focus();
         }
 
-        // Abre la tienda del personaje del nombre que está escrito
+        // Abre la tienda (y desde ahí el casillero) del nombre que está escrito
         private void btnPersonaje_Click(object sender, EventArgs e)
         {
             string nombre = txtNombre.Text.Trim();
             if (nombre == "")
             {
-                aviso = "Escribe tu nombre para abrir tu personaje";
+                aviso = "Escribe tu nombre para abrir la tienda";
                 Invalidate();
                 txtNombre.Focus();
                 return;
             }
             Perfil perfil = Perfiles.ObtenerOCrear(nombre);
-            using (FormPersonaje personaje = new FormPersonaje(perfil))
-                personaje.ShowDialog(this);
+            using (FormTienda tienda = new FormTienda(perfil, true))
+                tienda.ShowDialog(this);
             Invalidate();
             txtNombre.Focus();
         }
@@ -251,6 +257,7 @@ namespace PrograProyectoFinal
         private void btnLimpiar_Click(object sender, EventArgs e)
         {
             partida = new Partida(zona, null);
+            partida.Dificultad = dificultad;
             duenos = new string[4];
             txtNombre.Text = "";
             aviso = "";

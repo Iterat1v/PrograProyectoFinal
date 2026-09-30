@@ -24,8 +24,13 @@ namespace PrograProyectoFinal
             btnJugar = Boton("JUGAR SEMANA 1", 820, 540, 420, 72, Paleta.Verde, Paleta.Verde2, Jugar);
             btnFinal = Boton("VER EL FINAL", 820, 540, 420, 72, Paleta.Oro, Paleta.Oro2, (s, e) => IrA(new FormFinal(historia)));
             Boton("NUEVA HISTORIA", 820, 626, 200, 66, Paleta.Rosa, Paleta.Rosa2, NuevaHistoria, 10);
-            Boton("VOLVER", 1040, 626, 200, 66, Paleta.Crema, Paleta.Crema2, (s, e) => VolverAlTitulo(), 11);
+            Boton("REGRESAR", 1040, 626, 200, 66, Paleta.Crema, Paleta.Crema2, (s, e) => IrA(new FormModo()), 11);
             ActualizarBotones();
+            if (Perfiles.NombreActivo != "")
+            {
+                txtNombre.Text = Perfiles.NombreActivo;
+                Cargar();
+            }
         }
 
         // Para regresar al mapa con la historia ya cargada

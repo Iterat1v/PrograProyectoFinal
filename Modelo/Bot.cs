@@ -206,7 +206,7 @@ namespace PrograProyectoFinal
             else pedido = bot.PrecioVenta(auto);
             pedido = Math.Round(pedido / 1000) * 1000;
 
-            for (int intento = 0; intento < Partida.MAX_INTENTOS; intento++)
+            for (int intento = 0; intento < partida.IntentosMaximos; intento++)
             {
                 if (partida.OfrecerPrecio(indice, pedido, out string respuesta, out double contra, out recibido))
                     return $"vendió el {nombre} en ${pedido:N0}.";

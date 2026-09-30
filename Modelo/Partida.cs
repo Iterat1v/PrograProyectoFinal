@@ -7,7 +7,25 @@ namespace PrograProyectoFinal
         public const int MIN_JUGADORES = 2;
         public const int RONDAS = 10;
 
-        private static Random azar = new Random();
+        // Cada partida tiene su propio Random. En el reto del día se crea con la fecha
+        // como semilla, así a todos les salen las mismas cartas, autos y eventos.
+        private Random azar;
+        private int semilla = 0;          // 0 = partida normal; aaaammdd = reto del día
+
+        // ----- Dificultad (solo partida libre) -----
+        public const int FACIL = 0, NORMAL = 1, DIFICIL = 2;
+        public static readonly string[] NombresDificultad = { "FÁCIL", "NORMAL", "DIFÍCIL" };
+        public static readonly string[] DescripcionesDificultad =
+        {
+            "Clientes con 15 % más, 4 intentos para regatear y $50,000 extra.",
+            "Como se diseñó el juego: 3 intentos para regatear.",
+            "Clientes con 12 % menos, solo 2 intentos y $50,000 menos."
+        };
+        private static readonly double[] clientesDificultad = { 1.15, 1.0, 0.88 };
+        private static readonly int[] intentosDificultad = { 4, 3, 2 };
+        private static readonly double[] dineroDificultad = { 50000, 0, -50000 };
+        private int dificultad = NORMAL;
+        private int tema = 0;             // tema de la temporada (cambia la economía)
 
         private Concesionario[] jugadores = new Concesionario[MAX_JUGADORES];
         private int numJugadores = 0;
@@ -56,7 +74,6 @@ namespace PrograProyectoFinal
         private static readonly string[] dias = { "LUNES", "MARTES", "MIÉRCOLES", "JUEVES", "VIERNES", "SÁBADO", "DOMINGO" };
 
         private int evento = -1;          // -1 = día normal
-        public const int MAX_INTENTOS = 3;
         private int intentos = 0;          // ofertas rechazadas por el cliente de este turno
         private bool diaNuevo = true;      // para que la pantalla anuncie el día
 
@@ -113,12 +130,53 @@ namespace PrograProyectoFinal
         {
         }
 
-        public Partida(int zona, Historia historia)
+        public Partida(int zona, Historia historia) : this(zona, historia, 0)
+        {
+        }
+
+        public Partida(int zona, Historia historia, int semilla)
         {
             this.zona = zona;
             this.historia = historia;
+            this.semilla = semilla;
+            azar = semilla == 0 ? new Random() : new Random(semilla);
+            // El tema de la temporada solo aplica en la partida libre
+            if (historia == null && semilla == 0)
+                tema = Temporada.TemaActual;
             LlenarCatalogo();
             diaVotacion = 2 + azar.Next(3);       // la votación cae el día 2, 3 o 4
+        }
+
+        public int Semilla => semilla;
+        public bool EsReto => semilla != 0;
+        public bool EsLibre => historia == null && semilla == 0;
+        public int Tema => tema;
+        public int IntentosMaximos => intentosDificultad[dificultad];
+
+        public int Dificultad
+        {
+            get => dificultad;
+            set => dificultad = value;
+        }
+
+        // ----- Registro del patrimonio de cada día (para la gráfica del final) -----
+        private int diasRegistrados = 0;
+        public int DiasRegistrados => diasRegistrados;
+
+        public void RegistrarPatrimonios(int dia)
+        {
+            if (dia > DIAS) return;
+            for (int i = 0; i < numJugadores; i++)
+                jugadores[i].RegistrarDia(dia);
+            diasRegistrados = Math.Max(diasRegistrados, dia + 1);
+        }
+
+        // Si la partida terminó antes (todos se rindieron), se apunta cómo quedó
+        public void CerrarRegistro()
+        {
+            int dia = Math.Min(Dia, DIAS);
+            if (diasRegistrados <= dia)
+                RegistrarPatrimonios(dia);
         }
 
         public int NumJugadores => numJugadores;
@@ -141,7 +199,7 @@ namespace PrograProyectoFinal
         public int Dia => (ronda + 1) / 2;
         public string NombreDia => dias[(Dia - 1) % dias.Length];
         public string Momento => ronda % 2 == 1 ? "MAÑANA" : "TARDE";
-        public double FactorMercado => evento == BLACK_FRIDAY ? 0.70 : 1;
+        public double FactorMercado => (evento == BLACK_FRIDAY ? 0.70 : 1) * Temporada.FactorMercado[tema];
 
         // La pantalla lo pone en false cuando ya enseñó el aviso del día
         public bool DiaNuevo
@@ -270,6 +328,7 @@ namespace PrograProyectoFinal
             if (evento == HOT_SALE) presupuesto *= 1.25;
             if (historia != null && historia.Influencer && historia.Semana == 2) presupuesto *= 1.20;
             presupuesto *= FactorZona[zona];
+            presupuesto *= Temporada.FactorClientes[tema] * clientesDificultad[dificultad];
             presupuesto *= 0.85 + j.Reputacion * 0.003;       // buena fama = clientes con más dinero
             presupuesto = Math.Round(presupuesto / 5000) * 5000;
 
@@ -327,7 +386,7 @@ namespace PrograProyectoFinal
         // Después de vender, a veces llega de la nada un bro con cash
         public bool TalVezLlegaBro()
         {
-            if (cliente == null || azar.Next(100) >= 25)
+            if (cliente == null || azar.Next(100) >= Temporada.ProbabilidadBro[tema])
                 return false;
             cliente = new Cliente("El Bro", 9999999, -1, "¡Qué onda, carnal! Traigo cash. Véndeme lo que sea y ponle tú el precio.", 8, 1.25);
             yaVendio = false;
@@ -366,7 +425,7 @@ namespace PrograProyectoFinal
             }
 
             intentos++;
-            if (intentos >= MAX_INTENTOS)
+            if (intentos >= IntentosMaximos)
             {
                 respuesta = "¡Ya me cansé de regatear! Me voy a otro lado.";
                 j.CambiarReputacion(-4);
@@ -409,6 +468,8 @@ namespace PrograProyectoFinal
                 if (turno == 0)
                 {
                     ronda++;
+                    if (ronda % 2 == 1)
+                        RegistrarPatrimonios((ronda - 1) / 2);     // terminó un día
                     if (!Terminada && ronda % 2 == 1)
                         IniciarDia();
                 }
@@ -425,6 +486,9 @@ namespace PrograProyectoFinal
             int anterior = evento;
             evento = -1;
             diaNuevo = true;
+            // Reto del día: cada día arranca desde la misma semilla para todos
+            if (semilla != 0)
+                azar = new Random(semilla * 7 + Dia);
             for (int i = 0; i < numJugadores; i++)
                 estafasHoy[i] = 0;
 
@@ -539,6 +603,7 @@ namespace PrograProyectoFinal
             }
             pago = ofertas[ganador];
             jugadores[ganador].CompraDirecta(autoSubasta, pago);
+            jugadores[ganador].GanoSubasta();
             autoSubasta = null;
             return jugadores[ganador];
         }
@@ -557,6 +622,7 @@ namespace PrograProyectoFinal
         public void RegistrarEstafa(Concesionario usuario, Concesionario rival, PowerUp carta, double perdida)
         {
             usuario.CambiarReputacion(-8);
+            usuario.UsoEstafa();
             int r = IndiceDe(rival);
             if (r >= 0)
             {
@@ -594,7 +660,9 @@ namespace PrograProyectoFinal
         // Misma gente con los mismos vendedores, todo de cero
         public Partida Revancha()
         {
-            Partida nueva = new Partida(zona, historia);
+            Partida nueva = new Partida(zona, historia, semilla);
+            nueva.dificultad = dificultad;
+            nueva.tema = tema;
             for (int i = 0; i < numJugadores; i++)
             {
                 Concesionario j = new Concesionario(jugadores[i].Jugador, jugadores[i].Vendedor, jugadores[i].NivelBot);
@@ -606,6 +674,13 @@ namespace PrograProyectoFinal
         }
 
         // Para cargar una partida guardada
+        public void RestaurarExtras(int dificultad, int tema, int diasRegistrados)
+        {
+            this.dificultad = dificultad;
+            this.tema = tema;
+            this.diasRegistrados = diasRegistrados;
+        }
+
         public void Restaurar(int ronda, int turno, int evento, int diaVotacion, bool votacionPendiente, int[] opciones)
         {
             this.ronda = ronda;
@@ -627,7 +702,14 @@ namespace PrograProyectoFinal
 
         public void PrepararDraft()
         {
-            baraja.Barajar();
+            baraja.Barajar(semilla != 0 ? azar : null);
+
+            // Dinero según la dificultad (solo a las personas) y el día 0 de la gráfica
+            for (int i = 0; i < numJugadores; i++)
+                if (!jugadores[i].EsBot)
+                    jugadores[i].Dinero += dineroDificultad[dificultad];
+            RegistrarPatrimonios(0);
+
             for (int f = 0; f < 4; f++)
                 for (int c = 0; c < 4; c++)
                 {

@@ -46,12 +46,14 @@ namespace PrograProyectoFinal
         }
 
         // Algoritmo de Fisher-Yates: recorre de atrás hacia adelante
-        // e intercambia cada carta con una al azar de las que faltan
-        public void Barajar()
+        // e intercambia cada carta con una al azar de las que faltan.
+        // En el reto del día se pasa el Random de la partida para que a todos les toque lo mismo.
+        public void Barajar(Random azarPartida = null)
         {
+            Random r = azarPartida ?? azar;
             for (int i = cartas.Length - 1; i > 0; i--)
             {
-                int j = azar.Next(i + 1);
+                int j = r.Next(i + 1);
                 PowerUp temporal = cartas[i];
                 cartas[i] = cartas[j];
                 cartas[j] = temporal;

@@ -57,6 +57,18 @@ namespace PrograProyectoFinal
         private double mejorVenta = 0;
         private string mejorVentaAuto = "";
 
+        // Contadores para las misiones y los logros
+        private int chocadosVendidos = 0;
+        private int tuneadosVendidos = 0;
+        private int ventasBro = 0;
+        private int ventasCaras = 0;         // vendió arriba del precio sugerido
+        private int estafasUsadas = 0;
+        private int subastasGanadas = 0;
+        private bool pidioPrestamo = false;
+
+        // Patrimonio al terminar cada día (el 0 es el inicio) para la gráfica
+        private double[] historial = new double[Partida.DIAS + 1];
+
         public Concesionario(string jugador, int vendedor, int nivelBot) : this(jugador, vendedor)
         {
             this.nivelBot = nivelBot;
@@ -126,6 +138,33 @@ namespace PrograProyectoFinal
             mejorVentaAuto = mejorAuto;
             this.rendido = rendido;
         }
+        public int ChocadosVendidos => chocadosVendidos;
+        public int TuneadosVendidos => tuneadosVendidos;
+        public int VentasBro => ventasBro;
+        public int VentasCaras => ventasCaras;
+        public int EstafasUsadas => estafasUsadas;
+        public int SubastasGanadas => subastasGanadas;
+        public bool PidioPrestamo => pidioPrestamo;
+        public double[] Historial => historial;
+
+        public void UsoEstafa() => estafasUsadas++;
+        public void GanoSubasta() => subastasGanadas++;
+        public void RegistrarDia(int dia) => historial[dia] = Patrimonio();
+
+        // Para cargar una partida guardada
+        public void RestaurarContadores(int chocados, int tuneados, int bro, int caras, int estafas, int subastas, bool prestamo, double[] historial)
+        {
+            chocadosVendidos = chocados;
+            tuneadosVendidos = tuneados;
+            ventasBro = bro;
+            ventasCaras = caras;
+            estafasUsadas = estafas;
+            subastasGanadas = subastas;
+            pidioPrestamo = prestamo;
+            for (int i = 0; i < historial.Length && i < this.historial.Length; i++)
+                this.historial[i] = historial[i];
+        }
+
         public int DiasCompadre => diasCompadre;
         public double MejorVenta => mejorVenta;
         public string MejorVentaAuto => mejorVentaAuto;
@@ -228,6 +267,7 @@ namespace PrograProyectoFinal
         public string PedirBanco(double monto)
         {
             if (deudaBanco + monto > TOPE_BANCO) return $"El banco solo te presta hasta ${TOPE_BANCO:N0}.";
+            pidioPrestamo = true;
             deudaBanco += monto;
             Dinero += monto;
             return null;
@@ -237,6 +277,7 @@ namespace PrograProyectoFinal
         {
             if (deudaCompadre + monto > TOPE_COMPADRE) return $"Tu compadre solo tiene ${TOPE_COMPADRE:N0}.";
             if (deudaCompadre == 0) diasCompadre = 0;
+            pidioPrestamo = true;
             deudaCompadre += monto;
             Dinero += monto;
             return null;
@@ -326,6 +367,11 @@ namespace PrograProyectoFinal
             Auto auto = autos[indice];
             double recibido = precio;
             detalle = "";
+
+            if (auto.Estado == Auto.CHOCADO) chocadosVendidos++;
+            if (auto.Estado == Auto.TUNEADO) tuneadosVendidos++;
+            if (cliente.AceptaCualquiera) ventasBro++;
+            if (precio > PrecioVenta(auto)) ventasCaras++;
 
             if (errorDeCuentas)
             {

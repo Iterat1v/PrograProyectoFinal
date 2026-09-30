@@ -9,6 +9,10 @@ namespace PrograProyectoFinal
         private static Perfil[] perfiles = new Perfil[MAX_PERFILES];
         private static int cantidad = 0;
 
+        // El que entró al lobby: su nombre ya sale escrito en las demás pantallas
+        public static Perfil Activo { get; set; }
+        public static string NombreActivo => Activo?.Nombre ?? "";
+
         public static string Ruta => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Concesionario", "perfiles.txt");
 

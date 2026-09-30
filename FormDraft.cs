@@ -18,6 +18,7 @@ namespace PrograProyectoFinal
             partida.PrepararDraft();
             btnIniciar.Colores(Paleta.Verde, Paleta.Verde2);
             btnIniciar.Enabled = false;
+            BotonRegresar(Regresar);
             TurnoDelBot();
         }
 
@@ -165,6 +166,16 @@ namespace PrograProyectoFinal
                     TurnoDelBot();
             }
             Invalidate();
+        }
+
+        // Regresar a escoger modo (se pierde lo que llevan del draft)
+        private void Regresar(object sender, EventArgs e)
+        {
+            timerBot.Stop();
+            if (FormAviso.Preguntar(this, "¿REGRESAR?", "Se pierde el draft y los jugadores registrados.", Paleta.Crema2))
+                IrA(new FormModo());
+            else
+                TurnoDelBot();
         }
 
         private void btnIniciar_Click(object sender, EventArgs e)

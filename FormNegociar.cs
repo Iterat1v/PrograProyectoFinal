@@ -68,7 +68,7 @@ namespace PrograProyectoFinal
             string texto = ganancia >= 0 ? $"ganas {Pixel.Dinero(ganancia)}" : $"pierdes {Pixel.Dinero(-ganancia)}";
             Pixel.Texto(g, texto, Width / 2, 432, 11, colorPrecio, StringAlignment.Center);
 
-            Pixel.Texto(g, $"Intentos: {partida.Intentos}/{Partida.MAX_INTENTOS}", 40, 560, 11, Paleta.Gris);
+            Pixel.Texto(g, $"Intentos: {partida.Intentos}/{partida.IntentosMaximos}", 40, 560, 11, Paleta.Gris);
         }
 
         private void Cambiar(double cuanto)
