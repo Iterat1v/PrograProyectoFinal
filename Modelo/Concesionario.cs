@@ -197,7 +197,7 @@ namespace PrograProyectoFinal
         // factorEvento: 0.7 en Black Friday, 1 en un día normal
         public double PrecioCompra(Auto auto, double factorEvento = 1)
         {
-            double precio = auto.ValorActual() * (1 - descuento) * factorEvento;
+            double precio = auto.ValorAnunciado() * (1 - descuento) * factorEvento;
             if (sobreprecio)
                 precio *= 1.20;
             return Math.Round(precio / 1000) * 1000;
@@ -218,6 +218,8 @@ namespace PrograProyectoFinal
             auto.Costo = precio;
             RecibirAuto(auto);
             auto.Disponible = false;
+            auto.IndiceCatalogo = -1;       // ya es tuyo: su lugar en el mercado se llena mañana con otro
+            auto.FallaConocida = true;      // al revisarlo en tu lote sale la falla (si tiene)
             descuento = 0;              // el descuento es solo para una compra
             return null;
         }
@@ -232,6 +234,7 @@ namespace PrograProyectoFinal
             Dinero -= precio;
             auto.Costo = precio;
             RecibirAuto(auto);
+            auto.FallaConocida = true;
             return null;
         }
 
@@ -246,6 +249,19 @@ namespace PrograProyectoFinal
             Dinero -= costo;
             auto.Costo += costo;
             auto.Estado = Auto.NORMAL;
+            return null;
+        }
+
+        public string ArreglarFalla(int indice)
+        {
+            Auto auto = autos[indice];
+            if (!auto.TieneFalla) return "Ese auto no tiene fallas.";
+            if (!auto.FallaTieneArreglo) return $"\"{auto.NombreFalla}\" no tiene arreglo: ni modo.";
+            double costo = auto.CostoArreglarFalla(tieneMecanico);
+            if (costo > dinero) return $"No te alcanza: arreglarlo cuesta ${costo:N0}.";
+            Dinero -= costo;
+            auto.Costo += costo;
+            auto.Falla = -1;
             return null;
         }
 
@@ -396,6 +412,11 @@ namespace PrograProyectoFinal
                 CambiarReputacion(-10);
                 detalle += " Vendiste chatarra: -10 de reputación.";
             }
+            else if (auto.TieneFalla)
+            {
+                CambiarReputacion(-6);
+                detalle += $" Se lo vendiste con \"{auto.NombreFalla}\": -6 de reputación.";
+            }
             else
                 CambiarReputacion(auto.Estado == Auto.TUNEADO ? 4 : 2);
 
@@ -414,7 +435,7 @@ namespace PrograProyectoFinal
             return recibido;
         }
 
-        // Rematar: se lo vendes al lote de enfrente al 70 % y regresa al mercado
+        // Rematar: se lo vendes al lote de enfrente al 70 % de lo que vale
         public const double REMATE = 0.70;
 
         public double PrecioRemate(Auto auto)
@@ -427,7 +448,7 @@ namespace PrograProyectoFinal
             Auto auto = QuitarAuto(indice);
             double precio = PrecioRemate(auto);
             Dinero += precio;
-            auto.Disponible = auto.IndiceCatalogo >= 0;   // regresa al mercado
+            auto.Disponible = false;      // se lo lleva el lote de enfrente
             return precio;
         }
 

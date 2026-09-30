@@ -1,6 +1,7 @@
 namespace PrograProyectoFinal
 {
-    // Mercado: los 30 autos en una cuadrícula de 5 x 6. Cada uno lo compra un solo jugador.
+    // Mercado: 30 autos en una cuadrícula de 5 x 6. Cambian cada mañana y cada uno lo compra un solo jugador.
+    // Algunos traen fallas escondidas: solo las ves antes de comprar si tienes mecánico.
     public partial class FormMercado : FormPixel
     {
         private const int COLUMNAS = 6;
@@ -57,6 +58,10 @@ namespace PrograProyectoFinal
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, color], c.X + 50, c.Y + 8, 3);
                 if (auto.Disponible && auto.Estado == Auto.CHOCADO)
                     Pixel.Texto(g, "CHOCADO", c.Right - 10, c.Y + 16, 7, Paleta.Rosa2, StringAlignment.Far);
+                if (auto.Disponible)
+                    Pixel.Texto(g, $"{auto.Km / 1000:N0}k km", c.X + 12, c.Y + 16, 7, Paleta.Gris);
+                if (auto.Disponible && auto.TieneFalla && jugador.TieneMecanico)
+                    Pixel.Texto(g, "FALLA", c.Right - 10, c.Y + 34, 7, Paleta.Rosa, StringAlignment.Far);
                 Pixel.Texto(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center);
                 if (auto.Disponible)
                     Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto, factor)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
@@ -80,8 +85,12 @@ namespace PrograProyectoFinal
             else if (seleccionado != -1)
             {
                 Auto auto = catalogo[seleccionado];
-                string extra = auto.Estado == Auto.CHOCADO ? " · CHOCADO: repáralo en el TALLER" : "";
-                Pixel.Texto(g, $"{auto.Nombre} {Cliente.NombresColor[colorElegido]} · {auto.NombreTipo} · lista {Pixel.Dinero(jugador.PrecioVenta(auto))}{extra}", 40, 692, 10, Paleta.Crema);
+                string extra = auto.Estado == Auto.CHOCADO ? " · CHOCADO" : "";
+                string revision = !jugador.TieneMecanico ? " · Sin revisar: puede traer fallas (contrata un mecánico)"
+                                : auto.TieneFalla ? $" · Tu mecánico: {auto.NombreFalla.ToUpper()}"
+                                : " · Tu mecánico lo revisó: está bien";
+                Pixel.Texto(g, $"{auto.Marca} {auto.Nombre} · {auto.Km:N0} km{extra}{revision}", 40, 692, 9,
+                            auto.TieneFalla && jugador.TieneMecanico ? Paleta.Rosa : Paleta.Crema);
             }
             else if (jugador.Sobreprecio)
                 Pixel.Texto(g, "¡Te manipularon el mercado! Todo está 20 % más caro este turno.", 40, 692, 11, Paleta.Rosa);
@@ -153,7 +162,8 @@ namespace PrograProyectoFinal
             if (seleccionado == -1) return;
             if (catalogo[seleccionado].Disponible)
                 catalogo[seleccionado].Color = colorElegido;
-            string error = jugador.Comprar(catalogo[seleccionado], factor);
+            Auto comprado = catalogo[seleccionado];
+            string error = jugador.Comprar(comprado, factor);
             if (error != null)
             {
                 aviso = error;
@@ -162,6 +172,15 @@ namespace PrograProyectoFinal
             else
             {
                 Recursos.Sonar("compra");
+                // ¡Sorpresa! Al revisarlo en tu lote sale la falla escondida
+                if (comprado.TieneFalla && !jugador.TieneMecanico)
+                {
+                    Recursos.Sonar("estafa");
+                    FormAviso.Mostrar(this, "¡SORPRESA!", $"Al revisar el {comprado.Nombre} salió: {comprado.NombreFalla}. " +
+                                      $"Ahora vale {Pixel.Dinero(comprado.ValorActual())}." +
+                                      (comprado.FallaTieneArreglo ? $" Arréglalo en el TALLER por {Pixel.Dinero(comprado.CostoArreglarFalla(false))}." : " Eso no tiene arreglo."),
+                                      Paleta.Rosa, Recursos.Autos[comprado.Tipo, comprado.Color]);
+                }
                 aviso = "";
                 seleccionado = -1;
                 btnComprar.Enabled = false;

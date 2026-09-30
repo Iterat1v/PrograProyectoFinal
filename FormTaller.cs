@@ -1,6 +1,6 @@
 namespace PrograProyectoFinal
 {
-    // Taller: reparar lo chocado, tunear para venderlo más caro, o rematarlo
+    // Taller: reparar lo chocado, arreglar la falla, tunear para venderlo más caro, o rematarlo
     public class FormTaller : FormPixel
     {
         private Concesionario jugador;
@@ -20,11 +20,14 @@ namespace PrograProyectoFinal
             ShowInTaskbar = false;
 
             bool mec = jugador.TieneMecanico;
-            BotonPixel rep = Boton($"REPARAR ${auto.CostoReparar(mec) / 1000:N0}K", 40, 380, 240, 72, Paleta.Verde, Paleta.Verde2, Reparar, 11);
-            BotonPixel tun = Boton($"TUNEAR ${auto.CostoTunear(mec) / 1000:N0}K", 290, 380, 240, 72, Paleta.Agua, Paleta.Agua2, Tunear, 11);
-            Boton($"REMATAR ${jugador.PrecioRemate(auto) / 1000:N0}K", 540, 380, 240, 72, Paleta.Oro, Paleta.Oro2, Rematar, 11);
+            BotonPixel rep = Boton($"REPARAR ${auto.CostoReparar(mec) / 1000:N0}K", 30, 380, 184, 72, Paleta.Verde, Paleta.Verde2, Reparar, 9);
+            BotonPixel fal = Boton(auto.FallaTieneArreglo ? $"ARREGLAR FALLA ${auto.CostoArreglarFalla(mec) / 1000:N0}K" : "ARREGLAR FALLA",
+                                   222, 380, 184, 72, Paleta.Rosa, Paleta.Rosa2, ArreglarFalla, 8);
+            BotonPixel tun = Boton($"TUNEAR ${auto.CostoTunear(mec) / 1000:N0}K", 414, 380, 184, 72, Paleta.Agua, Paleta.Agua2, Tunear, 9);
+            Boton($"REMATAR ${jugador.PrecioRemate(auto) / 1000:N0}K", 606, 380, 184, 72, Paleta.Oro, Paleta.Oro2, Rematar, 9);
             Boton("CERRAR", 290, 470, 240, 66, Paleta.Crema, Paleta.Crema2, (s, e) => Close());
             rep.Enabled = auto.Estado == Auto.CHOCADO;
+            fal.Enabled = auto.FallaTieneArreglo;
             tun.Enabled = auto.Estado == Auto.NORMAL;
         }
 
@@ -51,10 +54,12 @@ namespace PrograProyectoFinal
             }
             Pixel.Texto(g, auto.Nombre, 190, 290, 13, Paleta.Noche, StringAlignment.Center);
             string estado = auto.Estado == Auto.NORMAL ? "En buen estado" : Auto.NombresEstado[auto.Estado];
-            Pixel.Texto(g, estado, 190, 322, 11, auto.Estado == Auto.CHOCADO ? Paleta.Rosa2 : Paleta.Verde2, StringAlignment.Center);
+            if (auto.TieneFalla) estado = auto.NombreFalla;
+            Pixel.Texto(g, estado, 190, 322, auto.TieneFalla ? 9 : 11, auto.Estado == Auto.CHOCADO || auto.TieneFalla ? Paleta.Rosa2 : Paleta.Verde2, StringAlignment.Center);
 
-            string texto = "Reparar: un chocado vale la mitad y los clientes lo pagan a la mitad. Si lo vendes así, baja tu reputación.\n" +
-                           "Tunear: vale 30 % más y los clientes pagan más.\nRematar: el lote de enfrente te da el 70 %.";
+            string texto = "Reparar: un chocado vale la mitad. Si lo vendes así, baja tu reputación.\n" +
+                           "Arreglar falla: la falla le baja el valor y el cliente regresa enojado.\n" +
+                           "Tunear: vale 30 % más.\nRematar: el lote de enfrente te da el 70 %.";
             if (jugador.TieneMecanico) texto += "\nTu mecánico cobra la mitad.";
             Pixel.Parrafo(g, texto, new Rectangle(370, 100, 420, 260), 10, Paleta.Noche);
             Pixel.Texto(g, $"Te ha costado {Pixel.Dinero(auto.Costo)}  ·  vale {Pixel.Dinero(auto.ValorActual())}", 410, 350, 10, Paleta.Gris, StringAlignment.Center);
@@ -74,6 +79,7 @@ namespace PrograProyectoFinal
         }
 
         private void Reparar(object sender, EventArgs e) => Terminar(jugador.Reparar(indice), $"El {auto.Nombre} quedó como nuevo.");
+        private void ArreglarFalla(object sender, EventArgs e) => Terminar(jugador.ArreglarFalla(indice), $"Le arreglaste \"{auto.NombreFalla}\" al {auto.Nombre}.");
         private void Tunear(object sender, EventArgs e) => Terminar(jugador.Tunear(indice), $"¡El {auto.Nombre} quedó tuneado! Rines, neón y todo.");
 
         private void Rematar(object sender, EventArgs e)

@@ -40,7 +40,8 @@ namespace PrograProyectoFinal
                     for (int i = 0; i < p.Catalogo.Length; i++)
                     {
                         Auto a = p.Catalogo[i];
-                        w.WriteLine(string.Join(S, "C", i, a.Estado, a.Color, B(a.Disponible), N(a.Costo)));
+                        w.WriteLine(string.Join(S, "C", i, a.Estado, a.Color, B(a.Disponible), N(a.Costo),
+                                                Limpio(a.Marca), Limpio(a.Modelo), a.Anio, N(a.Precio), a.Tipo, a.Km, a.Falla, B(a.FallaConocida)));
                     }
                     for (int j = 0; j < p.NumJugadores; j++)
                     {
@@ -56,7 +57,7 @@ namespace PrograProyectoFinal
                         {
                             Auto a = c.ObtenerAuto(k);
                             w.WriteLine(string.Join(S, "A", j, a.IndiceCatalogo, Limpio(a.Marca), Limpio(a.Modelo), a.Anio, N(a.Precio),
-                                                    a.Tipo, a.Color, a.Estado, N(a.Costo)));
+                                                    a.Tipo, a.Color, a.Estado, N(a.Costo), a.Km, a.Falla, B(a.FallaConocida)));
                         }
                         for (int k = 0; k < c.NumCartas; k++)
                         {
@@ -107,6 +108,14 @@ namespace PrograProyectoFinal
                             break;
                         case "C":
                             Auto a = p.Catalogo[int.Parse(c[1])];
+                            if (c.Length >= 14)
+                            {
+                                a = new Auto(c[6], c[7], int.Parse(c[8]), double.Parse(c[9], inv), int.Parse(c[10]), int.Parse(c[3]));
+                                a.Km = int.Parse(c[11]);
+                                a.Falla = int.Parse(c[12]);
+                                a.FallaConocida = c[13] == "1";
+                                p.PonerEnCatalogo(int.Parse(c[1]), a);
+                            }
                             a.Estado = int.Parse(c[2]);
                             a.Color = int.Parse(c[3]);
                             a.Disponible = c[4] == "1";
@@ -139,9 +148,14 @@ namespace PrograProyectoFinal
                                 int.Parse(c[5]), int.Parse(c[6]), int.Parse(c[7]), c[8] == "1", hist);
                             break;
                         case "A":
-                            int dueno = int.Parse(c[1]), cat = int.Parse(c[2]);
-                            Auto auto = cat >= 0 ? p.Catalogo[cat]
-                                : new Auto(c[3], c[4], int.Parse(c[5]), double.Parse(c[6], inv), int.Parse(c[7]), int.Parse(c[8]));
+                            int dueno = int.Parse(c[1]);
+                            Auto auto = new Auto(c[3], c[4], int.Parse(c[5]), double.Parse(c[6], inv), int.Parse(c[7]), int.Parse(c[8]));
+                            if (c.Length >= 14)
+                            {
+                                auto.Km = int.Parse(c[11]);
+                                auto.Falla = int.Parse(c[12]);
+                                auto.FallaConocida = c[13] == "1";
+                            }
                             auto.Estado = int.Parse(c[9]);
                             auto.Color = int.Parse(c[8]);
                             auto.Costo = double.Parse(c[10], inv);

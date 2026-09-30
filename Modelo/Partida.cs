@@ -228,48 +228,11 @@ namespace PrograProyectoFinal
             numJugadores++;
         }
 
-        // 30 autos: 10 sedanes, 10 compactos y 10 pickups (tipo, color del sprite)
+        // 30 autos al azar de los 66 modelos: 10 sedanes, 10 compactos y 10 pickups
         private void LlenarCatalogo()
         {
-            catalogo[0] = new Auto("Volkswagen", "Jetta", 2015, 98000, 0, 0);
-            catalogo[1] = new Auto("Nissan", "Tsuru", 2012, 55000, 0, 5);
-            catalogo[2] = new Auto("Nissan", "Sentra", 2018, 150000, 0, 7);
-            catalogo[3] = new Auto("Chevrolet", "Aveo", 2016, 72000, 0, 3);
-            catalogo[4] = new Auto("Nissan", "Versa", 2019, 135000, 0, 6);
-            catalogo[5] = new Auto("Toyota", "Corolla", 2017, 165000, 0, 4);
-            catalogo[6] = new Auto("Honda", "Civic", 2016, 175000, 0, 1);
-            catalogo[7] = new Auto("Mazda", "Mazda 3", 2018, 190000, 0, 0);
-            catalogo[8] = new Auto("Volkswagen", "Vento", 2017, 110000, 0, 2);
-            catalogo[9] = new Auto("Hyundai", "Accent", 2019, 125000, 0, 3);
-
-            catalogo[10] = new Auto("Volkswagen", "Vocho", 1998, 45000, 1, 1);
-            catalogo[11] = new Auto("Chevrolet", "Chevy", 2008, 40000, 1, 2);
-            catalogo[12] = new Auto("Nissan", "March", 2017, 85000, 1, 4);
-            catalogo[13] = new Auto("Chevrolet", "Spark", 2016, 60000, 1, 6);
-            catalogo[14] = new Auto("Dodge", "Atos", 2010, 38000, 1, 5);
-            catalogo[15] = new Auto("Volkswagen", "Beetle", 2014, 140000, 1, 0);
-            catalogo[16] = new Auto("Mini", "Cooper", 2013, 180000, 1, 3);
-            catalogo[17] = new Auto("Fiat", "500", 2015, 95000, 1, 4);
-            catalogo[18] = new Auto("Hyundai", "i10", 2019, 105000, 1, 7);
-            catalogo[19] = new Auto("Renault", "Kwid", 2020, 120000, 1, 2);
-
-            catalogo[20] = new Auto("Toyota", "Hilux", 2019, 160000, 2, 2);
-            catalogo[21] = new Auto("Ford", "Lobo", 2014, 190000, 2, 0);
-            catalogo[22] = new Auto("Toyota", "Tacoma", 2016, 250000, 2, 7);
-            catalogo[23] = new Auto("Ford", "Ranger", 2015, 170000, 2, 3);
-            catalogo[24] = new Auto("Nissan", "NP300", 2018, 145000, 2, 5);
-            catalogo[25] = new Auto("Mitsubishi", "L200", 2017, 155000, 2, 6);
-            catalogo[26] = new Auto("RAM", "RAM 700", 2019, 175000, 2, 1);
-            catalogo[27] = new Auto("Chevrolet", "Tornado", 2016, 90000, 2, 0);
-            catalogo[28] = new Auto("Nissan", "Frontier", 2020, 260000, 2, 7);
-            catalogo[29] = new Auto("Chevrolet", "Silverado", 2012, 200000, 2, 3);
-
             for (int i = 0; i < catalogo.Length; i++)
-                catalogo[i].IndiceCatalogo = i;
-
-            // 6 autos llegan chocados: salen a mitad de precio, pero hay que repararlos
-            for (int k = 0; k < 6; k++)
-                catalogo[azar.Next(catalogo.Length)].Estado = Auto.CHOCADO;
+                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10));
         }
 
         // Búsqueda lineal: empieza en un lugar al azar del catálogo y da la vuelta
@@ -380,6 +343,8 @@ namespace PrograProyectoFinal
             double valor = Math.Round((50000 + azar.Next(150000)) / 5000.0) * 5000;
             OfertaAuto = new Auto("", cochesSenor[c, 0], int.Parse(cochesSenor[c, 1]), valor, tipo, azar.Next(8));
             if (azar.Next(3) == 0) OfertaAuto.Estado = Auto.CHOCADO;
+            OfertaAuto.Km = Math.Max(1, Modelos.ANIO_ACTUAL - OfertaAuto.Anio) * (9000 + azar.Next(12000));
+            if (azar.Next(100) < 35) OfertaAuto.Falla = azar.Next(Auto.NombresFalla.Length);   // barato... por algo
             OfertaPrecio = Math.Round(OfertaAuto.ValorActual() * (0.5 + azar.NextDouble() * 0.2) / 1000) * 1000;
             OfertaSenor = senores[azar.Next(senores.Length)];
             return true;
@@ -418,7 +383,7 @@ namespace PrograProyectoFinal
                 if (cliente.Retrato < 8)
                 {
                     ultimaCompra[cliente.Retrato] = auto.Modelo;
-                    recuerdo[cliente.Retrato] = auto.Estado == Auto.CHOCADO ? 2 : 1;
+                    recuerdo[cliente.Retrato] = auto.Estado == Auto.CHOCADO || auto.TieneFalla ? 2 : 1;    // chocado o con falla = le salió malo
                 }
                 recibido = j.CerrarVenta(indice, cliente, precio, out string detalle);
                 respuesta += detalle;
@@ -524,31 +489,25 @@ namespace PrograProyectoFinal
         }
 
         // ----- El mercado se surte cada mañana -----
-        // Los autos que ya se vendieron a clientes (no están en ningún lote) regresan
-        // al mercado como seminuevos, con otro color y a veces chocados.
         public int AutosNuevos { get; private set; }
 
-        private bool EnAlgunLote(Auto auto)
-        {
-            for (int i = 0; i < numJugadores; i++)
-                for (int k = 0; k < jugadores[i].NumAutos; k++)
-                    if (jugadores[i].ObtenerAuto(k) == auto) return true;
-            return false;
-        }
-
+        // Cada mañana: donde hay un auto vendido llega uno nuevo al azar, y 30 % de los
+        // que nadie compró se los lleva otro lote y en su lugar llega otro.
         private void SurtirMercado()
         {
             AutosNuevos = 0;
             for (int i = 0; i < catalogo.Length; i++)
             {
-                Auto auto = catalogo[i];
-                if (auto.Disponible || EnAlgunLote(auto) || azar.Next(100) >= 70) continue;
-                auto.Disponible = true;
-                auto.Color = azar.Next(8);
-                auto.Estado = azar.Next(4) == 0 ? Auto.CHOCADO : Auto.NORMAL;
-                auto.Costo = 0;
+                if (catalogo[i].Disponible && azar.Next(100) >= 30) continue;
+                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10));
                 AutosNuevos++;
             }
+        }
+
+        public void PonerEnCatalogo(int i, Auto auto)
+        {
+            auto.IndiceCatalogo = i;
+            catalogo[i] = auto;
         }
 
         // Cuenta los votos (arreglo con cuántos votos tuvo cada opción) y aplica el ganador

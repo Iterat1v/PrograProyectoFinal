@@ -140,6 +140,11 @@ namespace PrograProyectoFinal
                     {
                         Recursos.Sonar("compra");
                         dialogo = $"¡Buena compra! El {oferta.Nombre} ya está en tu lote.";
+                        if (oferta.TieneFalla)
+                            FormAviso.Mostrar(this, "¡POR ALGO ESTABA BARATO!", $"Al revisar el {oferta.Nombre} salió: {oferta.NombreFalla}. " +
+                                              $"Ahora vale {Pixel.Dinero(oferta.ValorActual())}." +
+                                              (oferta.FallaTieneArreglo ? " Arréglalo en el TALLER." : " No tiene arreglo."), Paleta.Rosa,
+                                              Recursos.Autos[oferta.Tipo, oferta.Color]);
                     }
                 }
             }
@@ -382,6 +387,8 @@ namespace PrograProyectoFinal
                 if (auto.Estado != Auto.NORMAL)
                     Pixel.Texto(g, Auto.NombresEstado[auto.Estado], f.Right - 8, f.Y + 14, 7,
                                 auto.Estado == Auto.CHOCADO ? Paleta.Rosa2 : Paleta.Agua2, StringAlignment.Far);
+                if (auto.TieneFalla)
+                    Pixel.Texto(g, "FALLA", f.Right - 8, auto.Estado != Auto.NORMAL ? f.Y + 32 : f.Y + 14, 7, Paleta.Rosa2, StringAlignment.Far);
             }
 
             Pixel.Texto(g, "MIS CARTAS", 44, 524, 12, Paleta.Morado2);
@@ -500,7 +507,7 @@ namespace PrograProyectoFinal
                 if (indice < partida.JugadorActual.NumAutos && Fila(k).Contains(e.Location))
                 {
                     seleccionado = indice == seleccionado ? -1 : indice;
-                    Invalidate();
+                    Actualizar();       // así aparece el botón TALLER en cuanto escoges el auto
                 }
             }
             // Clic en las cartas chiquitas = USAR CARTA
