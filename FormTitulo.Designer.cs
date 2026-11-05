@@ -57,7 +57,7 @@ namespace PrograProyectoFinal
             Controls.Add(btnComoSeJuega);
             Controls.Add(btnSalir);
             Name = "FormTitulo";
-            Text = "Concesionario";
+            Text = "Car Cash";
             ResumeLayout(false);
         }
 

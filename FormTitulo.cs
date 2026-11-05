@@ -30,7 +30,7 @@ namespace PrograProyectoFinal
             for (int i = 0; i < 6; i++)
                 Pixel.R(g, 344 + i * 104, 240, 68, 80, i % 2 == 1 ? Paleta.Cielo : Paleta.Cielo2);
 
-            Pixel.SombraTexto(g, "CONCESIONARIO", 640, 104, 80, Paleta.Oro, Paleta.Rosa);
+            Pixel.SombraTexto(g, "CAR CASH", 640, 88, 104, Paleta.Oro, Paleta.Rosa);
             Pixel.Texto(g, "EQUIPO 4 · LOTE DE AUTOS", 640, 190, 13, Paleta.Agua, StringAlignment.Center);
 
             // piso del estacionamiento

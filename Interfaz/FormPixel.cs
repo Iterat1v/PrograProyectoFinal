@@ -20,7 +20,7 @@ namespace PrograProyectoFinal
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Paleta.Morado;
             DoubleBuffered = true;
-            Text = "Concesionario";
+            Text = "Car Cash";
             KeyPreview = true;
         }
 
