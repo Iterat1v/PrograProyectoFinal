@@ -39,6 +39,15 @@ namespace PrograProyectoFinal
         protected override void OnMouseUp(MouseEventArgs e) { presionado = false; Invalidate(); base.OnMouseUp(e); }
         protected override void OnEnabledChanged(EventArgs e) { Invalidate(); base.OnEnabledChanged(e); }
 
+        // Un doble clic rápido mandaba el segundo clic a una ventana que ya se cerró ("objeto desechado"):
+        // si la ventana ya no está a la vista, el clic se ignora
+        protected override void OnClick(EventArgs e)
+        {
+            Form ventana = FindForm();
+            if (IsDisposed || ventana == null || ventana.IsDisposed || !ventana.Visible) return;
+            base.OnClick(e);
+        }
+
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;

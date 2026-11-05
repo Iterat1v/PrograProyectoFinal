@@ -33,7 +33,7 @@ namespace PrograProyectoFinal
             btnJugar.Colores(Paleta.Verde, Paleta.Verde2);
             btnBot.Colores(Paleta.Lila, Paleta.Morado3);
             btnPersonaje.Colores(Paleta.Oro, Paleta.Oro2);
-            btnPersonaje.Text = "TIENDA";
+            btnPersonaje.Text = "PERSONAJE";
             ElegirPrimeroLibre();
             ActualizarBotones();
         }
@@ -215,14 +215,14 @@ namespace PrograProyectoFinal
             string nombre = txtNombre.Text.Trim();
             if (nombre == "")
             {
-                aviso = "Escribe tu nombre para abrir la tienda";
+                aviso = "Escribe tu nombre para ver tu personaje";
                 Invalidate();
                 txtNombre.Focus();
                 return;
             }
             Perfil perfil = Perfiles.ObtenerOCrear(nombre);
-            using (FormTienda tienda = new FormTienda(perfil, true))
-                tienda.ShowDialog(this);
+            using (FormPersonaje casillero = new FormPersonaje(perfil))
+                casillero.ShowDialog(this);
             Invalidate();
             txtNombre.Focus();
         }

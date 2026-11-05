@@ -95,7 +95,8 @@ namespace PrograProyectoFinal
             int total = 0, tiene = 0;
             for (int p = 0; p < Avatar.PARTES; p++)
             {
-                total += Cosmeticos.Cantidad(p);
+                for (int k = 0; k < Cosmeticos.Cantidad(p); k++)
+                    if (Cosmeticos.Origen(p, k) == Cosmeticos.BASICO) total++;      // sin tienda ni pase: solo lo básico se puede tener
                 tiene += perfil.CuantosTiene(p);
             }
             Pixel.Texto(g, $"Colección: {tiene} de {total}", 220, 494, 11, Paleta.Gris, StringAlignment.Center);
@@ -103,7 +104,6 @@ namespace PrograProyectoFinal
             Pixel.R(g, 74, 516, 292 * tiene / total, 8, Paleta.Agua);
             Pixel.Sprite(g, Recursos.Moneda, 110, 548, 6);
             Pixel.Texto(g, $"{perfil.Monedas} monedas", 160, 566, 14, Paleta.Oro2);
-            Pixel.Parrafo(g, "Consigue más en la TIENDA del día y en el PASE de temporada.", new Rectangle(64, 604, 312, 60), 9, Paleta.Gris, StringAlignment.Center);
 
             // ----- lo que tienes de esta parte -----
             if (numTuyos == 0)

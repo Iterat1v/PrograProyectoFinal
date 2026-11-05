@@ -5,13 +5,13 @@ namespace PrograProyectoFinal
     {
         private string[] reglas =
         {
-            "De 2 a 4 en la misma compu o contra bots, en la zona que escojas (de Ecatepec a Polanco). En MODO HISTORIA juegas 5 semanas contra 5 jefes. Empiezas con $500,000.",
+            "De 1 a 4 jugadores: solo contra bots o con amigos en la misma compu, en la zona que escojas (de Ecatepec a Polanco). En MODO HISTORIA juegas 5 semanas contra 5 jefes. Empiezas con $500,000.",
             "La partida dura 5 días de 2 turnos (mañana y tarde). Llega un cliente que dice qué tipo de auto busca, cuánto trae y a veces de qué color (si no lo tienes, lo pintas por $10,000).",
             "En el MERCADO escoges el auto y su color (a cada cliente le gustan unos y odia otros). Los CHOCADOS salen a mitad de precio: repáralos o túnealos en el TALLER.",
             "Escoge un auto de tu lote y dale VENDER: tú pones el precio y el cliente acepta o te contraoferta (3 intentos). Si es de otro tipo, solo lo compra muy barato. Sin dinero, REMATA un auto al 70 %.",
             "Antes de empezar hay un draft: salen 16 ABILICARDS y cada quien escoge 3. Regateo te ayuda, Estafa ataca a un rival y Aseguradora te defiende sola.",
             "Cuida tu REPUTACIÓN: estafar, vender chatarra o que se te vaya un cliente la baja, y con mala fama llegan menos clientes. En la OFICINA pides préstamos y contratas vendedor y mecánico.",
-            "Cada día puede pasar algo (terremoto, Black Friday, zombies, subasta...) y una vez por partida todos votan el evento. Los clientes regresan y se acuerdan de lo que les vendiste. La partida se guarda sola."
+            "Cada día puede pasar algo (terremoto, Black Friday, zombies, subasta...) y una vez por partida todos votan el evento. Los clientes regresan y la partida se guarda sola."
         };
 
         public FormReglas()

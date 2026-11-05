@@ -133,6 +133,7 @@ namespace PrograProyectoFinal
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            if (IsDisposed || !Visible) return;
             if (Titulo == "" || e.Y > 54) return;
 
             if (e.X >= 1220)

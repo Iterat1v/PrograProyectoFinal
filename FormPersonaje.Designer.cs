@@ -48,7 +48,7 @@ namespace PrograProyectoFinal
             Controls.Add(btnListo);
             Name = "FormPersonaje";
             StartPosition = FormStartPosition.CenterParent;
-            Titulo = "TU PERSONAJE · TIENDA";
+            Titulo = "TU PERSONAJE";
             ResumeLayout(false);
         }
 

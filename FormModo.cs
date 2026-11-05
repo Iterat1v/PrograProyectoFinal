@@ -35,7 +35,7 @@ namespace PrograProyectoFinal
             // ----- partida libre -----
             Pixel.Panel(g, 40, 76, 580, 428, Paleta.Crema);
             Pixel.Texto(g, "PARTIDA LIBRE", 330, 108, 16, Paleta.Morado2, StringAlignment.Center);
-            Pixel.Texto(g, "De 2 a 4 jugadores o contra bots. Escoge la zona:", 330, 146, 10, Paleta.Noche, StringAlignment.Center);
+            Pixel.Texto(g, "De 1 a 4 jugadores: solo contra bots o con amigos. Escoge la zona:", 330, 146, 10, Paleta.Noche, StringAlignment.Center);
             for (int i = 0; i < Partida.Zonas.Length; i++)
             {
                 Rectangle r = Zona(i);
