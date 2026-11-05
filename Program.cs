@@ -14,10 +14,7 @@ namespace PrograProyectoFinal
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += (s, e) =>
             {
-                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Perfiles.Ruta) ?? ".", "errores.txt"), DateTime.Now + "
-" + e.Exception + "
-
-"); } catch (IOException) { }
+                try { File.AppendAllText(Path.Combine(Path.GetDirectoryName(Perfiles.Ruta) ?? ".", "errores.txt"), DateTime.Now + "\n" + e.Exception + "\n\n"); } catch (IOException) { }
                 if (e.Exception is ObjectDisposedException) return;
                 MessageBox.Show(e.Exception.Message, "Car Cash", MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
