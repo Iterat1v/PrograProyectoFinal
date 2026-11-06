@@ -188,6 +188,26 @@ namespace PrograProyectoFinal
                 fundido.Start();
             }
             base.OnShown(e);
+            if (escalado && !Pixel.Captura)
+            {
+                TopMost = true;   // para tapar la barra de tareas mientras se juega
+                Activate();
+            }
+        }
+
+        // Si el jugador pasa a otra aplicación, el juego deja de tapar todo; al volver, lo vuelve a hacer
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+            if (escalado && !Pixel.Captura && !TopMost)
+                TopMost = true;
+        }
+
+        protected override void OnDeactivate(EventArgs e)
+        {
+            base.OnDeactivate(e);
+            if (escalado && !Pixel.Captura && TopMost)
+                TopMost = false;
         }
 
         // Si el jugador cierra la ventana (y no es un cambio de pantalla), se acaba el juego

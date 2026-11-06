@@ -17,11 +17,15 @@ namespace PrograProyectoFinal
         // Modo de pruebas (--captura): las ventanas se muestran fuera de la pantalla y sin quitar el foco
         public static bool Captura = false;
 
-        // Agranda lo que se dibuje después en este Graphics. Solo actúa una vez por pintada.
+        // Agranda lo que se dibuje después en este Graphics. Solo actúa una vez por pintada:
+        // si el Graphics ya trae esa escala se deja igual. Se suma a lo que WinForms ya haya movido
+        // (por ejemplo al pintar el fondo de un botón transparente), no lo borra.
         public static void Escalar(Graphics g)
         {
-            if (Esc != 1f && g.Transform.IsIdentity)
-                g.ScaleTransform(Esc, Esc);
+            if (Esc == 1f) return;
+            using (System.Drawing.Drawing2D.Matrix actual = g.Transform)
+                if (Math.Abs(actual.Elements[0] - Esc) < 0.001f) return;
+            g.ScaleTransform(Esc, Esc);
         }
 
         public static void Preparar(Graphics g)
