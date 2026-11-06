@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Taller: reparar lo chocado, arreglar la falla, tunear para venderlo más caro, o rematarlo
     public class FormTaller : FormPixel
@@ -34,11 +34,11 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Crema);
-            Pixel.R(g, 14, 14, Width - 28, 60, Paleta.Oro);
-            Pixel.Texto(g, "TALLER", Width / 2, 44, 17, Paleta.Noche, StringAlignment.Center);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Crema);
+            Pixel.R(g, 14, 14, AnchoD - 28, 60, Paleta.Oro);
+            Pixel.Texto(g, "TALLER", AnchoD / 2, 44, 17, Paleta.Noche, StringAlignment.Center);
 
             Pixel.R(g, 40, 100, 300, 170, Paleta.LilaClaro);
             Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], 62, 130, 8);

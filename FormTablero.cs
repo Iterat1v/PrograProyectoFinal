@@ -170,12 +170,24 @@ namespace PrograProyectoFinal
             Actualizar();
             Update();
             Bitmap foto = new Bitmap(Pixel.ANCHO, Pixel.ALTO);
-            DrawToBitmap(foto, new Rectangle(0, 0, Pixel.ANCHO, Pixel.ALTO));
+            if (Pixel.Esc == 1f)
+                DrawToBitmap(foto, new Rectangle(0, 0, Pixel.ANCHO, Pixel.ALTO));
+            else
+            {
+                // Pantalla completa: la foto se toma del tamaño real y se baja a 1280 x 720
+                using (Bitmap grande = new Bitmap(ClientSize.Width, ClientSize.Height))
+                using (Graphics gf = Graphics.FromImage(foto))
+                {
+                    DrawToBitmap(grande, new Rectangle(0, 0, ClientSize.Width, ClientSize.Height));
+                    gf.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    gf.DrawImage(grande, 0, 0, Pixel.ANCHO, Pixel.ALTO);
+                }
+            }
             Rectangle[] zonas =
             {
-                new Rectangle(0, 0, 800, 84), new Rectangle(20, 104, 380, 404), btnMercado.Bounds,
-                new Rectangle(420, 104, 500, 380), btnVender.Bounds, new Rectangle(20, 508, 380, 108),
-                new Rectangle(940, 104, 320, 512), btnOficina.Bounds, btnPasar.Bounds
+                new Rectangle(0, 0, 800, 84), new Rectangle(20, 104, 380, 404), Diseno(btnMercado.Bounds),
+                new Rectangle(420, 104, 500, 380), Diseno(btnVender.Bounds), new Rectangle(20, 508, 380, 108),
+                new Rectangle(940, 104, 320, 512), Diseno(btnOficina.Bounds), Diseno(btnPasar.Bounds)
             };
             string[] titulos = { "EL DÍA Y TU LANA", "MI LOTE", "MERCADO", "EL CLIENTE", "VENDER Y REGATEAR", "TUS CARTAS", "RANKING", "OFICINA", "PASAR TURNO" };
             string[] textos =
@@ -318,7 +330,7 @@ namespace PrograProyectoFinal
             // TALLER aparece cuando escoges un auto del lote
             int fila = seleccionado - pagina * FILAS;
             btnRematar.Visible = libre && seleccionado != -1 && fila >= 0 && fila < FILAS;
-            btnRematar.Location = new Point(236, 498);
+            btnRematar.Location = Aqui(236, 498);
             btnRematar.Text = "TALLER";
             Invalidate();
         }

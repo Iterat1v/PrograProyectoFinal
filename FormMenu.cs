@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Menú de pausa del tablero (se abre con MENÚ o con Esc)
     public partial class FormMenu : FormPixel
@@ -35,10 +35,10 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Morado2, Paleta.Negro);
-            Pixel.SombraTexto(g, "PAUSA", Width / 2, 56, 48, Paleta.Oro, Paleta.Rosa);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Morado2, Paleta.Negro);
+            Pixel.SombraTexto(g, "PAUSA", AnchoD / 2, 56, 48, Paleta.Oro, Paleta.Rosa);
         }
 
         private void Elegir(int opcion)

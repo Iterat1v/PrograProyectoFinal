@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace PrograProyectoFinal
 {
@@ -51,11 +51,11 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
+            Pixel.Preparar(g); Pixel.Escalar(g);
 
             // El control incluye la sombra: 4 px a la derecha y 6 px abajo
-            int w = Width - 4;
-            int h = Height - 6;
+            int w = (int)Math.Round(Width / Pixel.Esc) - 4;
+            int h = (int)Math.Round(Height / Pixel.Esc) - 6;
             int d = presionado ? 3 : 0;
 
             Color fondo = ColorFondo, sombra = ColorSombra, texto = ColorTexto;

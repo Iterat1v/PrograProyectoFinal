@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Repetición de la mejor estafa: la carta vuela del estafador al estafado
     public class FormRepeticion : FormPixel
@@ -35,9 +35,9 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Noche);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Noche, Paleta.Rosa);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Noche);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Noche, Paleta.Rosa);
             Pixel.SombraTexto(g, "REPETICIÓN", 500, 50, 40, Paleta.Oro, Paleta.Rosa);
             Pixel.Texto(g, "LA MEJOR ESTAFA DE LA PARTIDA", 500, 106, 12, Paleta.Agua, StringAlignment.Center);
 

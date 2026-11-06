@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Oficina: préstamos (banco y compadre) y empleados (vendedor y mecánico)
     public class FormOficina : FormPixel
@@ -51,9 +51,9 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Morado2, Paleta.Negro);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Morado2, Paleta.Negro);
             Pixel.Texto(g, "OFICINA", 40, 44, 18, Paleta.Oro);
             Pixel.Sprite(g, Recursos.Moneda, 330, 30, 5);
             Pixel.Texto(g, $"Tienes {Pixel.Dinero(jugador.Dinero)}", 370, 44, 13, Paleta.Oro);

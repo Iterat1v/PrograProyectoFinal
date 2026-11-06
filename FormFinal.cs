@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // El final del modo historia: cambia según tus decisiones y tu reputación
     public class FormFinal : FormPixel
@@ -21,7 +21,7 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
+            Pixel.Preparar(g); Pixel.Escalar(g);
             Pixel.R(g, 0, 0, Pixel.ANCHO, Pixel.ALTO, Paleta.Noche);
             Pixel.Estrellas(g, 60, 5);
             Pixel.SombraTexto(g, "FINAL", 640, 56, 48, Paleta.Oro, Paleta.Rosa);

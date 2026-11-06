@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Pantalla 4: el podio con el ranking final (ordenado con burbuja)
     public partial class FormResultados : FormPixel
@@ -88,7 +88,7 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
+            Pixel.Preparar(g); Pixel.Escalar(g);
 
             Pixel.R(g, 0, 0, Pixel.ANCHO, Pixel.ALTO, Paleta.Noche);
             Pixel.Estrellas(g, 50, 3);

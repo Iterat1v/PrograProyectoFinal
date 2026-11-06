@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Ventanita de aviso con el estilo del juego (en lugar de MessageBox):
     // eventos del día, estafas, el bro, y preguntas de sí / no.
@@ -44,11 +44,11 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Crema);
-            Pixel.R(g, 14, 14, Width - 28, 64, color);
-            Pixel.Texto(g, encabezado, Width / 2, 46, 17, Paleta.Noche, StringAlignment.Center);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Crema);
+            Pixel.R(g, 14, 14, AnchoD - 28, 64, color);
+            Pixel.Texto(g, encabezado, AnchoD / 2, 46, 17, Paleta.Noche, StringAlignment.Center);
 
             int x = 40;
             if (sprite != null)
@@ -57,7 +57,7 @@ namespace PrograProyectoFinal
                 Pixel.Sprite(g, sprite, 40, 110, 128f / Math.Max(sprite.Width, sprite.Height));
                 x = 196;
             }
-            Pixel.Parrafo(g, texto, new Rectangle(x, 104, Width - x - 36, 180), 13, Paleta.Noche);
+            Pixel.Parrafo(g, texto, new Rectangle(x, 104, AnchoD - x - 36, 180), 13, Paleta.Noche);
         }
 
         private void btnSi_Click(object sender, EventArgs e)

@@ -1,4 +1,4 @@
-using System.Drawing.Drawing2D;
+﻿using System.Drawing.Drawing2D;
 using System.Drawing.Text;
 
 namespace PrograProyectoFinal
@@ -9,6 +9,20 @@ namespace PrograProyectoFinal
     {
         public const int ANCHO = 1280;
         public const int ALTO = 720;
+
+        // Pantalla completa: factor con el que se agranda todo el juego (1 = ventana normal de 1280 x 720).
+        // Lo fija Program.Main según el tamaño del monitor.
+        public static float Esc = 1f;
+
+        // Modo de pruebas (--captura): las ventanas se muestran fuera de la pantalla y sin quitar el foco
+        public static bool Captura = false;
+
+        // Agranda lo que se dibuje después en este Graphics. Solo actúa una vez por pintada.
+        public static void Escalar(Graphics g)
+        {
+            if (Esc != 1f && g.Transform.IsIdentity)
+                g.ScaleTransform(Esc, Esc);
+        }
 
         public static void Preparar(Graphics g)
         {

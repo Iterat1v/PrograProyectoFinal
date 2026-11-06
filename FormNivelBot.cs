@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Escoger qué tan bueno es el bot
     public partial class FormNivelBot : FormPixel
@@ -19,10 +19,10 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Morado2, Paleta.Negro);
-            Pixel.Texto(g, "¿QUÉ TAN BUENO ES EL BOT?", Width / 2, 44, 16, Paleta.Oro, StringAlignment.Center);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Morado2, Paleta.Negro);
+            Pixel.Texto(g, "¿QUÉ TAN BUENO ES EL BOT?", AnchoD / 2, 44, 16, Paleta.Oro, StringAlignment.Center);
 
             string[] textos =
             {

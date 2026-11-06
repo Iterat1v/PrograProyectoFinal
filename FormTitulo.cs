@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Pantalla 0: el lote de noche con los autos estacionados
     public partial class FormTitulo : FormPixel
@@ -14,7 +14,7 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
+            Pixel.Preparar(g); Pixel.Escalar(g);
 
             // cielo en tres franjas
             for (int y = 0; y < 400; y += 16)

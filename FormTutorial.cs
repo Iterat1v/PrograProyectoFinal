@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Tutorial de la primera partida: una foto del tablero oscurecida donde se ilumina
     // una parte a la vez con un globo que explica para qué sirve.
@@ -37,8 +37,8 @@ namespace PrograProyectoFinal
         private void Acomodar()
         {
             Rectangle gl = Globo();
-            btnSiguiente.Location = new Point(gl.Right - 220, gl.Bottom - 72);
-            btnSaltar.Location = new Point(gl.Right - 400, gl.Bottom - 72);
+            btnSiguiente.Location = Aqui(gl.Right - 220, gl.Bottom - 72);
+            btnSaltar.Location = Aqui(gl.Right - 400, gl.Bottom - 72);
             btnSiguiente.Text = paso == zonas.Length - 1 ? "¡A JUGAR!" : "SIGUIENTE";
             btnSaltar.Visible = paso < zonas.Length - 1;
             Invalidate();
@@ -66,7 +66,7 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
+            Pixel.Preparar(g); Pixel.Escalar(g);
             g.DrawImage(foto, 0, 0, Pixel.ANCHO, Pixel.ALTO);
             using (SolidBrush sombra = new SolidBrush(Color.FromArgb(185, 10, 4, 20)))
                 g.FillRectangle(sombra, 0, 0, Pixel.ANCHO, Pixel.ALTO);

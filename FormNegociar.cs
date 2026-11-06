@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Regateo: el jugador pone el precio y el cliente acepta, contraoferta o se va
     public partial class FormNegociar : FormPixel
@@ -36,11 +36,11 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics;
-            Pixel.Preparar(g);
-            Pixel.R(g, 0, 0, Width, Height, Paleta.Morado);
-            Pixel.Panel(g, 0, 0, Width, Height, Paleta.Crema);
-            Pixel.R(g, 14, 14, Width - 28, 60, Paleta.Agua);
-            Pixel.Texto(g, "¿EN CUÁNTO SE LO DEJAS?", Width / 2, 44, 16, Paleta.Noche, StringAlignment.Center);
+            Pixel.Preparar(g); Pixel.Escalar(g);
+            Pixel.R(g, 0, 0, AnchoD, AltoD, Paleta.Morado);
+            Pixel.Panel(g, 0, 0, AnchoD, AltoD, Paleta.Crema);
+            Pixel.R(g, 14, 14, AnchoD - 28, 60, Paleta.Agua);
+            Pixel.Texto(g, "¿EN CUÁNTO SE LO DEJAS?", AnchoD / 2, 44, 16, Paleta.Noche, StringAlignment.Center);
 
             Cliente cliente = partida.ClienteActual;
 
@@ -61,12 +61,12 @@ namespace PrograProyectoFinal
             Pixel.Texto(g, $"Te costó {Pixel.Dinero(auto.Costo)}", 797, 262, 11, Paleta.Gris, StringAlignment.Center);
 
             // precio
-            Pixel.Texto(g, "TU PRECIO", Width / 2, 330, 12, Paleta.Morado2, StringAlignment.Center);
+            Pixel.Texto(g, "TU PRECIO", AnchoD / 2, 330, 12, Paleta.Morado2, StringAlignment.Center);
             Color colorPrecio = precio < auto.Costo ? Paleta.Rosa2 : Paleta.Verde2;
-            Pixel.Texto(g, Pixel.Dinero(precio), Width / 2, 382, 22, colorPrecio, StringAlignment.Center);
+            Pixel.Texto(g, Pixel.Dinero(precio), AnchoD / 2, 382, 22, colorPrecio, StringAlignment.Center);
             double ganancia = precio - auto.Costo;
             string texto = ganancia >= 0 ? $"ganas {Pixel.Dinero(ganancia)}" : $"pierdes {Pixel.Dinero(-ganancia)}";
-            Pixel.Texto(g, texto, Width / 2, 432, 11, colorPrecio, StringAlignment.Center);
+            Pixel.Texto(g, texto, AnchoD / 2, 432, 11, colorPrecio, StringAlignment.Center);
 
             Pixel.Texto(g, $"Intentos: {partida.Intentos}/{partida.IntentosMaximos}", 40, 560, 11, Paleta.Gris);
         }
