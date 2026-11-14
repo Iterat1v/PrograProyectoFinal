@@ -50,16 +50,67 @@ namespace PrograProyectoFinal
             { "Jeep", "Gladiator", 2024, 1100000, 2020 }, { "Dodge", "Dakota", 2011, 220000, 2005 }
         };
 
+
+        // Autos de lujo: llegan sobre todo a Polanco y Santa Fe. Mismo formato que la lista de arriba, 12 por tipo.
+        // (precios nuevos reales en pesos; abajo se escalan igual que los demas)
+        private static readonly object[,] premium =
+        {
+            // ----- sedanes de lujo (tipo 0) -----
+            { "BMW", "Serie 3", 2024, 950000, 2012 }, { "Mercedes", "Clase C", 2024, 1050000, 2012 },
+            { "Audi", "A4", 2024, 980000, 2012 }, { "Tesla", "Model 3", 2024, 950000, 2019 },
+            { "Porsche", "Panamera", 2023, 2800000, 2012 }, { "Lexus", "ES", 2023, 1100000, 2013 },
+            { "Mercedes", "Clase E", 2023, 1300000, 2010 }, { "BMW", "Serie 5", 2023, 1250000, 2011 },
+            { "Audi", "A6", 2023, 1250000, 2011 }, { "Jaguar", "XE", 2020, 900000, 2016 },
+            { "Volvo", "S60", 2023, 900000, 2012 }, { "Tesla", "Model S", 2023, 1900000, 2013 },
+            // ----- compactos de lujo (tipo 1) -----
+            { "Mini", "Cooper S", 2024, 650000, 2012 }, { "Audi", "A1", 2020, 450000, 2012 },
+            { "BMW", "Serie 1", 2023, 700000, 2012 }, { "Mercedes", "Clase A", 2024, 750000, 2014 },
+            { "Audi", "A3", 2024, 750000, 2011 }, { "Porsche", "911", 2023, 3200000, 2012 },
+            { "BMW", "i3", 2020, 800000, 2015 }, { "Smart", "Fortwo", 2019, 350000, 2012 },
+            { "Alfa Romeo", "Giulietta", 2019, 600000, 2012 }, { "Audi", "TT", 2022, 1000000, 2008 },
+            { "Tesla", "Model Y", 2024, 1100000, 2021 }, { "Lexus", "CT", 2017, 450000, 2012 },
+            // ----- camionetas y pickups de lujo (tipo 2) -----
+            { "Mercedes", "Clase G", 2024, 3200000, 2012 }, { "Land Rover", "Range Rover", 2024, 2300000, 2012 },
+            { "Porsche", "Cayenne", 2024, 2000000, 2010 }, { "BMW", "X5", 2024, 1600000, 2010 },
+            { "Audi", "Q7", 2024, 1500000, 2010 }, { "Tesla", "Cybertruck", 2024, 1900000, 2024 },
+            { "Ford", "F-150 Raptor", 2023, 1500000, 2012 }, { "RAM", "2500 Limited", 2023, 1600000, 2012 },
+            { "Cadillac", "Escalade", 2023, 2000000, 2010 }, { "Lincoln", "Navigator", 2023, 1900000, 2012 },
+            { "Porsche", "Macan", 2024, 1500000, 2015 }, { "Mercedes", "GLE", 2024, 1700000, 2012 }
+        };
+
+        // De cada 100 autos que llegan, cuantos son de lujo segun la zona (Ecatepec ... Polanco)
+        public static readonly int[] PorcentajeLujo = { 0, 3, 18, 50, 85 };
+        private const int TOPE_NORMAL = 400000;
+        private const int TOPE_LUJO = 1500000;
+
         public const int POR_TIPO = 22;
         public static int Cantidad => lista.GetLength(0);
 
-        // Un auto nuevo al azar del tipo que se pide
+        // Un auto nuevo al azar del tipo que se pide (sin zona = como antes)
         public static Auto Nuevo(Random azar, int tipo)
         {
-            int m = tipo * POR_TIPO + azar.Next(POR_TIPO);
-            string marca = (string)lista[m, 0], modelo = (string)lista[m, 1];
-            int nuevo = (int)lista[m, 2], viejo = (int)lista[m, 4];
-            double base_ = (int)lista[m, 3];
+            return Nuevo(azar, tipo, -1);
+        }
+
+        // Un auto nuevo segun la zona: en Polanco puro lujo (BMW, Mercedes, Tesla, Porsche...), en Ecatepec y Neza
+        // carros sencillos y baratos (Tsuru, Aveo, Jetta, Chevy...)
+        public static Auto Nuevo(Random azar, int tipo, int zona)
+        {
+            object[,] fuente = lista;
+            int POR = POR_TIPO;
+            bool lujo = zona >= 0 && azar.Next(100) < PorcentajeLujo[zona];
+            if (lujo) { fuente = premium; POR = 12; }
+            int m = tipo * POR + azar.Next(POR);
+            // en las zonas pobres se prefiere el mas barato de dos al azar; en las ricas, el mas caro
+            if (!lujo && zona >= 0 && (zona <= 1 || zona >= 3))
+            {
+                int m2 = tipo * POR + azar.Next(POR);
+                bool masBarato = zona <= 1;
+                if (((int)fuente[m2, 3] < (int)fuente[m, 3]) == masBarato) m = m2;
+            }
+            string marca = (string)fuente[m, 0], modelo = (string)fuente[m, 1];
+            int nuevo = (int)fuente[m, 2], viejo = (int)fuente[m, 4];
+            double base_ = (int)fuente[m, 3];
 
             int anio = viejo + azar.Next(nuevo - viejo + 1);
             int edad = Math.Max(1, ANIO_ACTUAL - anio);
@@ -70,7 +121,7 @@ namespace PrograProyectoFinal
             double esperado = 15000.0 * edad;
             double ajuste = 1 - (km - esperado) / esperado * 0.12;
             precio *= Math.Max(0.88, Math.Min(1.10, ajuste));
-            precio = Math.Max(25000, Math.Min(400000, Math.Round(precio / 1000) * 1000));
+            precio = Math.Max(25000, Math.Min(lujo ? TOPE_LUJO : TOPE_NORMAL, Math.Round(precio / 1000) * 1000));
 
             Auto auto = new Auto(marca, modelo, anio, precio, tipo, azar.Next(Cliente.NombresColor.Length));
             auto.Km = km;

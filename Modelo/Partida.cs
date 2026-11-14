@@ -232,7 +232,7 @@ namespace PrograProyectoFinal
         private void LlenarCatalogo()
         {
             for (int i = 0; i < catalogo.Length; i++)
-                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10));
+                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10, zona));
         }
 
         // Búsqueda lineal: empieza en un lugar al azar del catálogo y da la vuelta
@@ -499,7 +499,7 @@ namespace PrograProyectoFinal
             for (int i = 0; i < catalogo.Length; i++)
             {
                 if (catalogo[i].Disponible && azar.Next(100) >= 30) continue;
-                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10));
+                PonerEnCatalogo(i, Modelos.Nuevo(azar, i / 10, zona));
                 AutosNuevos++;
             }
         }
