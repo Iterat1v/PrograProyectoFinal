@@ -11,6 +11,12 @@ namespace PrograProyectoFinal
         private int volteando = -1;           // casilla que se está volteando
         private int paso = 0;
 
+        // Cartel grande de "TE TOCA" para que el jugador sepa que le toca escoger carta
+        private const int CARTEL_VIDA = 70;      // ticks de 30 ms: entra, se queda parpadeando y sale
+        private string cartel = "";
+        private int cartelVida = 0;
+        private System.Windows.Forms.Timer timerCartel = new System.Windows.Forms.Timer { Interval = 30 };
+
         internal FormDraft(Partida partida)
         {
             InitializeComponent();
@@ -20,6 +26,36 @@ namespace PrograProyectoFinal
             btnIniciar.Enabled = false;
             BotonRegresar(Regresar);
             TurnoDelBot();
+            timerCartel.Tick += (s, e) => { cartelVida--; if (cartelVida <= 0) timerCartel.Stop(); Invalidate(); };
+            FormClosed += (s, e) => timerCartel.Stop();
+            Shown += (s, e) => AvisarTurno();   // se enseña cuando ya se ve la ventana
+        }
+
+        // Si le toca a una persona (no a un bot) sale el cartel grande con su nombre
+        private void AvisarTurno()
+        {
+            if (partida.DraftTerminado) return;
+            Concesionario quien = partida.ObtenerJugador(partida.JugadorDraft);
+            if (quien.EsBot) return;
+            cartel = $"¡TE TOCA, {quien.Jugador.ToUpper()}!";
+            cartelVida = CARTEL_VIDA;
+            timerCartel.Start();
+            Recursos.Sonar("turno");
+            Invalidate();
+        }
+
+        private void DibujarCartel(Graphics g)
+        {
+            if (cartelVida <= 0 || cartel == "") return;
+            int t = CARTEL_VIDA - cartelVida;
+            int x = 0;
+            if (t < 8) x = -Pixel.ANCHO + t * Pixel.ANCHO / 8;                    // entra desde la izquierda
+            else if (cartelVida < 8) x = (8 - cartelVida) * Pixel.ANCHO / 8;      // sale hacia la derecha
+            double pulso = Math.Sin(t / 3.0) * 3;
+            Pixel.R(g, x, 270, Pixel.ANCHO, 168, Paleta.Negro);
+            Pixel.R(g, x, 278, Pixel.ANCHO, 152, ((t / 4) & 1) == 0 ? Paleta.Rosa : Paleta.Rosa2);
+            Pixel.SombraTexto(g, cartel, x + 640, 338, (float)(52 + pulso), Paleta.Oro, Paleta.Morado3);
+            Pixel.Texto(g, "ESCOGE UNA CARTA", x + 640, 404, 16, Paleta.Crema, StringAlignment.Center);
         }
 
         // Si le toca a un bot, escoge solo después de una pausa
@@ -117,6 +153,7 @@ namespace PrograProyectoFinal
                 if (k < n - 1) orden += " → ";
             }
             Pixel.Texto(g, orden, 800, 608, 13, Paleta.Crema);
+            DibujarCartel(g);
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
@@ -163,7 +200,10 @@ namespace PrograProyectoFinal
                     Recursos.Sonar("turno");
                 }
                 else
+                {
                     TurnoDelBot();
+                    AvisarTurno();
+                }
             }
             Invalidate();
         }

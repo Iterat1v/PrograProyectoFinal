@@ -26,6 +26,12 @@ namespace PrograProyectoFinal
         private string ultimoDialogo = "";
         private int letras = 0;                    // cuantas letras de la frase se ven ya
 
+        // ----- Turno del bot: dura unos 5 s (4 pasos) con su linea de tiempo; RAPIDO lo acelera -----
+        private const int BOT_PASO_MS = 1250, BOT_PASO_RAPIDO_MS = 350, BOT_PASOS = 4;
+        private static bool botRapido = false;     // se queda para toda la partida
+        private System.Diagnostics.Stopwatch swPaso = new System.Diagnostics.Stopwatch();
+        private BotonPixel btnRapido;
+
         // Letrero grande de "TURNO DE ..." que aparece al empezar cada turno
         private string letrero = "";
         private int letreroVida = 0;
@@ -48,11 +54,13 @@ namespace PrograProyectoFinal
             btnSiguiente.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnOficina = Boton("OFICINA", 874, 12, 116, 62, Paleta.Agua, Paleta.Agua2, btnOficina_Click, 9);
             Boton("?", 800, 12, 62, 62, Paleta.LilaClaro, Paleta.Crema2, (s, e) => MostrarTutorial(), 15);
+            btnRapido = Boton(botRapido ? "NORMAL" : "RÁPIDO", 940, 636, 320, 60, Paleta.Agua, Paleta.Agua2, (s, e) => AlternarRapido(), 11);
+            btnRapido.Visible = false;
             timerLetrero.Tick += (s, e) =>
             {
                 letreroVida--;
                 if (letreroVida <= 0) timerLetrero.Stop();
-                Invalidate(new Rectangle(0, 250, Pixel.ANCHO, 180));
+                Repintar(new Rectangle(0, 250, Pixel.ANCHO, 180));
             };
 
             timerTiempo.Tick += (s, e) => TickTiempo();
@@ -85,8 +93,26 @@ namespace PrograProyectoFinal
         {
             if (entrada > 0) entrada = Math.Max(0, entrada - (entrada > 80 ? 22 : 9));   // llega rapido y frena al final
             if (letras < ultimoDialogo.Length) letras += 2;
-            if (entrada == 0 && letras >= ultimoDialogo.Length) timerAnim.Stop();
-            Invalidate(new Rectangle(420, 104, 500, 380));
+            if (entrada == 0 && letras >= ultimoDialogo.Length && !timerBot.Enabled) timerAnim.Stop();
+            Repintar(new Rectangle(420, 104, 500, 380));
+        }
+
+        // Repinta una zona dada en medidas del diseno (1280 x 720). Con pantalla completa el dibujo va escalado
+        // (x2 a 2K) y Invalidate(rect) usa pixeles reales: sin esta conversion solo se repintaba una esquina.
+        private void Repintar(Rectangle zonaDiseno)
+        {
+            Point a = Aqui(zonaDiseno.X, zonaDiseno.Y);
+            Point b2 = Aqui(zonaDiseno.Right, zonaDiseno.Bottom);
+            Invalidate(new Rectangle(a.X, a.Y, b2.X - a.X, b2.Y - a.Y));
+        }
+
+        private void AlternarRapido()
+        {
+            botRapido = !botRapido;
+            btnRapido.Text = botRapido ? "NORMAL" : "RÁPIDO";
+            if (timerBot.Enabled) timerBot.Interval = botRapido ? BOT_PASO_RAPIDO_MS : BOT_PASO_MS;
+            Recursos.Sonar("menu");
+            Invalidate();
         }
 
         private void ReiniciarTiempo()
@@ -113,7 +139,7 @@ namespace PrograProyectoFinal
             if (fase >= 2 && humor < 2) { humor = 2; dialogo = cliente.FraseImpaciente(partida.Azar); Recursos.Sonar("error"); }
             if (humor == 2) vibrar++;
             if (fase == 3) { SeFueEnojado(); return; }
-            Invalidate(new Rectangle(420, 104, 500, 380));
+            Repintar(new Rectangle(420, 104, 500, 380));
         }
 
         // Se acabo la paciencia: el cliente se va enojado, baja la reputacion y pasa el turno
@@ -129,9 +155,34 @@ namespace PrograProyectoFinal
             timerPasar.Start();
         }
 
+        // Mientras juega el bot: una linea de tiempo que se llena en ~5 s con los 4 pasos de su turno
+        private void DibujarTiempoBot(Graphics g)
+        {
+            int intervalo = Math.Max(1, timerBot.Interval);
+            double avance = (pasoBot + Math.Min(1.0, swPaso.ElapsedMilliseconds / (double)intervalo)) / BOT_PASOS;
+            avance = Math.Max(0, Math.Min(1, avance));
+            int x0 = 432, y0 = 426, ancho = 340, alto = 11;
+            Pixel.R(g, x0 - 3, y0 - 3, ancho + 6, alto + 6, Paleta.Negro);
+            Pixel.R(g, x0, y0, ancho, alto, Paleta.Morado3);
+            Pixel.R(g, x0, y0, (int)(ancho * avance), alto, Paleta.Agua);
+            string[] pasos = { "CARTA", "COMPRA", "VENDE", "FIN" };
+            for (int i = 0; i < BOT_PASOS; i++)
+            {
+                int cx = x0 + ancho * i / BOT_PASOS + ancho / (BOT_PASOS * 2);
+                bool hecho = i < pasoBot || (i == pasoBot && avance * BOT_PASOS - i > 0.4);
+                Pixel.Texto(g, pasos[i], cx, y0 + alto / 2, 7, hecho ? Paleta.Noche : Paleta.Crema, StringAlignment.Center);
+            }
+            Pixel.Texto(g, "TURNO DE " + partida.JugadorActual.Jugador.ToUpper(), 912, y0 + alto / 2, 9, Paleta.Agua, StringAlignment.Far);
+        }
+
         // La linea de tiempo: tres tramos (tranquilo, impaciente, enojado) y una marca que avanza
         private void DibujarTiempo(Graphics g)
         {
+            if (partida.JugadorActual.EsBot && timerBot.Enabled)
+            {
+                DibujarTiempoBot(g);
+                return;
+            }
             if (tiempoTotalMs == 0 || partida.JugadorActual.EsBot || partida.JugadorActual.PierdeTurno) return;
             double usado = sePaso ? 1 : 1 - (double)tiempoMs / tiempoTotalMs;
             usado = Math.Max(0, Math.Min(1, usado));
@@ -411,6 +462,7 @@ namespace PrograProyectoFinal
             btnSiguiente.Enabled = pagina < paginas - 1;
 
             bool castigado = jugador.PierdeTurno;
+            btnRapido.Visible = esperando && jugador.EsBot;
             bool libre = !esperando && !castigado;
             btnVender.Enabled = libre && !partida.YaVendio && partida.ClienteActual != null;
             btnMercado.Enabled = libre;
@@ -592,7 +644,7 @@ namespace PrograProyectoFinal
                 flotante = "";
                 timerFlotante.Stop();
             }
-            Invalidate(new Rectangle(1000, 60, 280, 100));
+            Repintar(new Rectangle(1000, 60, 280, 100));
         }
 
         // Si el texto no cabe en el globo, se hace más chiquita la letra
@@ -715,8 +767,11 @@ namespace PrograProyectoFinal
         {
             esperando = true;
             pasoBot = 0;
+            timerBot.Interval = botRapido ? BOT_PASO_RAPIDO_MS : BOT_PASO_MS;
             Actualizar();
             timerBot.Start();
+            swPaso.Restart();
+            timerAnim.Start();
         }
 
         private void timerBot_Tick(object sender, EventArgs e)
@@ -724,6 +779,7 @@ namespace PrograProyectoFinal
             Concesionario bot = partida.JugadorActual;
             string quien = bot.Jugador;
             string hizo = null;
+            swPaso.Restart();
 
             switch (pasoBot)
             {
