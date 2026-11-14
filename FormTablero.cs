@@ -637,6 +637,7 @@ namespace PrograProyectoFinal
                 Pixel.R(g, f.X, f.Y, f.Width, f.Height, Paleta.LilaClaro);
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], f.X + 8, f.Y + 18, 4);
                 Pixel.TextoAjustado(g, auto.Nombre, f.X + 148, f.Y + 34, 12, Paleta.Noche, StringAlignment.Near, f.Width - 156);
+                Pixel.Texto(g, "costó " + Pixel.Dinero(auto.Costo), f.X + 148, f.Y + 53, 8, Paleta.Gris);
                 Pixel.Texto(g, Pixel.Dinero(jugador.PrecioVenta(auto)), f.X + 148, f.Y + 70, 12, Paleta.Verde2);
                 if (auto.Estado != Auto.NORMAL)
                     Pixel.Texto(g, Auto.NombresEstado[auto.Estado], f.Right - 8, f.Y + 14, 7,

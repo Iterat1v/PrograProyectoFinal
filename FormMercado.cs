@@ -13,6 +13,13 @@ namespace PrograProyectoFinal
         private int colorElegido = 0;     // el color con el que te lo llevas
         private string aviso = "";
 
+        // Recibo de la compra: un letrero arriba con las especificaciones y lo que pagaste
+        private const int RECIBO_VIDA = 140;       // ticks de 30 ms
+        private int reciboVida = 0;
+        private string reciboL1 = "", reciboL2 = "";
+        private string ultimaCompra = "";          // se queda abajo para que no se te olvide de cuanto fue
+        private System.Windows.Forms.Timer timerRecibo = new System.Windows.Forms.Timer { Interval = 30 };
+
         internal FormMercado(Partida partida)
         {
             InitializeComponent();
@@ -24,6 +31,39 @@ namespace PrograProyectoFinal
             btnComprar.Colores(Paleta.Verde, Paleta.Verde2);
             btnCerrar.Colores(Paleta.Crema, Paleta.Crema2);
             btnComprar.Enabled = false;
+            timerRecibo.Tick += (s, e) => { reciboVida--; if (reciboVida <= 0) timerRecibo.Stop(); Invalidate(); };
+            FormClosed += (s, e) => timerRecibo.Stop();
+        }
+
+        // "Mazda 3 2012" ya trae la marca: no se repite ("Mazda Mazda 3")
+        private static string NombreCompleto(Auto auto) =>
+            auto.Nombre.StartsWith(auto.Marca, StringComparison.OrdinalIgnoreCase) ? auto.Nombre : $"{auto.Marca} {auto.Nombre}";
+
+        // Arma el recibo con las especificaciones del auto recien comprado
+        private void MostrarRecibo(Auto auto)
+        {
+            string color = Cliente.NombresColor[auto.Color];
+            string estado = auto.Estado == Auto.CHOCADO ? "  ·  CHOCADO" : auto.Estado == Auto.TUNEADO ? "  ·  TUNEADO" : "";
+            string falla = auto.TieneFalla && !jugador.TieneMecanico ? "  ·  ¡revísalo: puede traer falla!" : auto.TieneFalla ? $"  ·  falla: {auto.NombreFalla}" : "";
+            reciboL1 = $"{NombreCompleto(auto)}  ·  {color}  ·  {auto.Km:N0} km  ·  {auto.NombreTipo}{estado}{falla}";
+            reciboL2 = $"Pagaste {Pixel.Dinero(auto.Costo)}   ·   lo vendes en ~{Pixel.Dinero(jugador.PrecioVenta(auto))}";
+            ultimaCompra = $"ÚLTIMA COMPRA: {NombreCompleto(auto)} {color} · {auto.Km:N0} km · pagaste {Pixel.Dinero(auto.Costo)} · vende ~{Pixel.Dinero(jugador.PrecioVenta(auto))}";
+            reciboVida = RECIBO_VIDA;
+            timerRecibo.Start();
+        }
+
+        private void DibujarRecibo(Graphics g)
+        {
+            if (reciboVida <= 0) return;
+            int t = RECIBO_VIDA - reciboVida;
+            int y = 60;
+            if (t < 8) y = 60 - (8 - t) * 14;                 // baja desde arriba
+            else if (reciboVida < 8) y = 60 - (8 - reciboVida) * 14;   // y se sube al final
+            Pixel.R(g, 36, y, 1208, 104, Paleta.Negro);
+            Pixel.R(g, 42, y + 6, 1196, 92, ((t / 5) & 1) == 0 ? Paleta.Verde : Paleta.Verde2);
+            Pixel.Texto(g, "¡COMPRASTE!", 66, y + 28, 20, Paleta.Crema);
+            Pixel.TextoAjustado(g, reciboL1, 66, y + 58, 13, Paleta.Noche, StringAlignment.Near, 1150);
+            Pixel.TextoAjustado(g, reciboL2, 66, y + 82, 15, Paleta.Oro, StringAlignment.Near, 1150);
         }
 
         // [fila, columna] -> índice del arreglo: fila * 6 + columna
@@ -89,15 +129,18 @@ namespace PrograProyectoFinal
                 string revision = !jugador.TieneMecanico ? " · Sin revisar: puede traer fallas (contrata un mecánico)"
                                 : auto.TieneFalla ? $" · Tu mecánico: {auto.NombreFalla.ToUpper()}"
                                 : " · Tu mecánico lo revisó: está bien";
-                Pixel.Texto(g, $"{auto.Marca} {auto.Nombre} · {auto.Km:N0} km{extra}{revision}", 40, 692, 9,
-                            auto.TieneFalla && jugador.TieneMecanico ? Paleta.Rosa : Paleta.Crema);
+                Pixel.TextoAjustado(g, $"{Pixel.Dinero(jugador.PrecioCompra(auto, factor))} · {NombreCompleto(auto)} · {auto.Km:N0} km{extra}{revision}", 40, 692, 10,
+                            auto.TieneFalla && jugador.TieneMecanico ? Paleta.Rosa : Paleta.Crema, StringAlignment.Near, 1200);
             }
             else if (jugador.Sobreprecio)
                 Pixel.Texto(g, "¡Te manipularon el mercado! Todo está 20 % más caro este turno.", 40, 692, 11, Paleta.Rosa);
             else if (jugador.Descuento > 0)
                 Pixel.Texto(g, $"Tienes {jugador.Descuento * 100:0} % de descuento en esta compra (ya aplicado).", 40, 692, 11, Paleta.Agua);
+            else if (ultimaCompra != "")
+                Pixel.TextoAjustado(g, ultimaCompra, 40, 692, 11, Paleta.Verde, StringAlignment.Near, 1200);
             else
                 Pixel.Texto(g, "Escoge un auto. Lo vendes 30 % más caro de lo que te costó.", 40, 692, 11, Paleta.Tenue);
+            DibujarRecibo(g);
         }
 
         private int CasillaEn(Point punto)
@@ -172,6 +215,7 @@ namespace PrograProyectoFinal
             else
             {
                 Recursos.Sonar("compra");
+                MostrarRecibo(comprado);
                 // ¡Sorpresa! Al revisarlo en tu lote sale la falla escondida
                 if (comprado.TieneFalla && !jugador.TieneMecanico)
                 {
