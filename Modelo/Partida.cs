@@ -360,6 +360,7 @@ namespace PrograProyectoFinal
             if (cliente == null || azar.Next(100) >= Temporada.ProbabilidadBro[tema])
                 return false;
             cliente = new Cliente("El Bro", 9999999, -1, "¡Qué onda, carnal! Traigo cash. Véndeme lo que sea y ponle tú el precio.", 8, 1.25);
+            cliente.Hablar(zona, azar);   // el Bro tambien habla como su zona al regatear
             yaVendio = false;
             intentos = 0;
             return true;
