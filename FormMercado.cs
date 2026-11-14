@@ -62,7 +62,7 @@ namespace PrograProyectoFinal
                     Pixel.Texto(g, $"{auto.Km / 1000:N0}k km", c.X + 12, c.Y + 16, 7, Paleta.Gris);
                 if (auto.Disponible && auto.TieneFalla && jugador.TieneMecanico)
                     Pixel.Texto(g, "FALLA", c.Right - 10, c.Y + 34, 7, Paleta.Rosa, StringAlignment.Far);
-                Pixel.Texto(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center);
+                Pixel.TextoAjustado(g, auto.Nombre, c.X + 98, c.Y + 66, 9, Paleta.Noche, StringAlignment.Center, c.Width - 12);
                 if (auto.Disponible)
                     Pixel.Texto(g, Pixel.Dinero(jugador.PrecioCompra(auto, factor)), c.X + 98, c.Y + 86, 9, Paleta.Verde2, StringAlignment.Center);
                 else

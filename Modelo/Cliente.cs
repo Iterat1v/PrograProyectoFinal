@@ -22,6 +22,8 @@ namespace PrograProyectoFinal
         private int colorFavorito = -1;
         private int colorOdiado = -1;
         private double factorRecuerdo = 1;  // si ya te compró antes: le fue bien o le fue mal
+        private int estilo = -1;            // como habla (Habla.*); -1 = como antes
+        private string saludoEstilo = "";   // lo que dice al llegar segun su estilo, escogido una sola vez
 
         public Cliente(string nombre, double presupuesto, int tipoBuscado, string frase, int retrato, double factorPago)
             : this(nombre, presupuesto, tipoBuscado, frase, retrato)
@@ -46,6 +48,21 @@ namespace PrograProyectoFinal
         public string Muletilla => Muletillas[retrato];
 
         public int ColorBuscado { get => colorBuscado; set => colorBuscado = value; }
+        public int Estilo => estilo;
+        public string NombreEstilo => estilo < 0 ? "" : Habla.Nombres[estilo];
+
+        // Le da su forma de hablar (zona o visitante) y escoge UNA vez como saluda
+        public void Hablar(int estiloNuevo, Random azar)
+        {
+            estilo = estiloNuevo;
+            saludoEstilo = azar.Next(100) < 60 ? Habla.Saludo(estilo, azar) + " " : "";
+        }
+
+        // Lo que dice mientras espera y se va impacientando (lo usa el tablero con el reloj)
+        public string FraseImpaciente(Random azar) => Habla.Impaciente(estilo < 0 ? 0 : estilo, azar);
+
+        // Lo que dice cuando se harta y se va
+        public string FraseEnojado(Random azar) => Habla.Enojado(estilo < 0 ? 0 : estilo, azar);
         public double FactorRecuerdo { get => factorRecuerdo; set => factorRecuerdo = value; }
 
         public void Gustos(int favorito, int odiado)
@@ -118,26 +135,29 @@ namespace PrograProyectoFinal
             bool otroTipo = !AceptaCualquiera && auto.Tipo != tipoBuscado;
             double limite = Limite(auto, licenciado, ventaSegura);
             contraoferta = limite;
-            string muletilla = azar.Next(2) == 0 ? Muletilla + " " : "";
+            bool conEstilo = estilo >= 0;
+            string muletilla = !conEstilo && azar.Next(2) == 0 ? Muletilla + " " : "";
 
             if (precio <= limite)
             {
-                respuesta = otroTipo ? "No es lo que buscaba... pero a ese precio me lo llevo."
-                                     : $"{muletilla}¡Trato hecho! Me lo llevo.";
+                if (conEstilo) respuesta = Habla.Acepta(estilo, azar);
+                else respuesta = otroTipo ? "No es lo que buscaba... pero a ese precio me lo llevo."
+                                          : $"{muletilla}¡Trato hecho! Me lo llevo.";
                 return ACEPTA;
             }
             if (precio <= limite * 1.15 && azar.Next(100) < 40)
             {
-                respuesta = "Mmm... ándale pues, me convenciste.";
+                respuesta = conEstilo ? Habla.Acepta(estilo, azar) : "Mmm... ándale pues, me convenciste.";
                 return ACEPTA;
             }
 
             if (otroTipo)
-                respuesta = $"Yo busco un {Recursos.Tipos[tipoBuscado].ToLower()}... pero si me lo dejas en ${limite:N0} lo pienso.";
+                respuesta = conEstilo ? Habla.OtroTipo(estilo, Recursos.Tipos[tipoBuscado].ToLower(), limite, azar)
+                                      : $"Yo busco un {Recursos.Tipos[tipoBuscado].ToLower()}... pero si me lo dejas en ${limite:N0} lo pienso.";
             else if (precio > limite * 1.4)
-                respuesta = $"{muletilla}¡Estás loco! Te doy ${limite:N0} y ya.";
+                respuesta = conEstilo ? Habla.Loco(estilo, limite, azar) : $"{muletilla}¡Estás loco! Te doy ${limite:N0} y ya.";
             else
-                respuesta = $"{muletilla}Está caro. Te doy ${limite:N0}.";
+                respuesta = conEstilo ? Habla.Contra(estilo, limite, azar) : $"{muletilla}Está caro. Te doy ${limite:N0}.";
             return CONTRAOFERTA;
         }
 
@@ -146,9 +166,9 @@ namespace PrograProyectoFinal
         {
             get
             {
-                if (AceptaCualquiera) return frase;
+                if (AceptaCualquiera) return saludoEstilo + frase;
                 string color = colorBuscado == -1 ? "" : $" Y lo quiero {NombresColor[colorBuscado]}.";
-                return $"{frase} Traigo ${presupuesto:N0}.{color}";
+                return $"{saludoEstilo}{frase} Traigo ${presupuesto:N0}.{color}";
             }
         }
     }

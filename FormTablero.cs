@@ -13,6 +13,13 @@ namespace PrograProyectoFinal
         private int pasoBot = 0;                   // en qué va el bot en su turno
         private BotonPixel btnOficina;
 
+        // ----- Reloj del cliente: se impacienta y, si tardas mucho, se va enojado -----
+        private System.Windows.Forms.Timer timerTiempo = new System.Windows.Forms.Timer { Interval = 100 };
+        private int tiempoMs, tiempoTotalMs;       // 0 = sin reloj (turno del bot o sin cliente)
+        private int humor = 0;                     // 0 tranquilo, 1 impaciente, 2 enojado
+        private int vibrar = 0;                    // cuenta para que tiemble el globo cuando esta enojado
+        private bool sePaso = false;               // ya se fue enojado
+
         // Letrero grande de "TURNO DE ..." que aparece al empezar cada turno
         private string letrero = "";
         private int letreroVida = 0;
@@ -42,6 +49,8 @@ namespace PrograProyectoFinal
                 Invalidate(new Rectangle(0, 250, Pixel.ANCHO, 180));
             };
 
+            timerTiempo.Tick += (s, e) => TickTiempo();
+            FormClosed += (s, e) => timerTiempo.Stop();
             partida.NuevoCliente();
             NuevoTurno();
             // Los avisos se enseñan cuando ya se ve la ventana
@@ -59,7 +68,73 @@ namespace PrograProyectoFinal
                 dialogo = "...";
             else
                 dialogo = partida.ClienteActual.Saludo;
+            ReiniciarTiempo();
             Actualizar();
+        }
+
+        private void ReiniciarTiempo()
+        {
+            timerTiempo.Stop();
+            humor = 0; vibrar = 0; sePaso = false;
+            Concesionario j = partida.JugadorActual;
+            if (j.EsBot || j.PierdeTurno || partida.ClienteActual == null) { tiempoTotalMs = 0; return; }
+            tiempoTotalMs = partida.TiempoTurno * 1000;
+            tiempoMs = tiempoTotalMs;
+            timerTiempo.Start();
+        }
+
+        // Cada 0.1 s. El reloj solo corre con esta ventana al frente: se pausa solo con el menu, el mercado o el regateo.
+        private void TickTiempo()
+        {
+            if (tiempoTotalMs == 0 || esperando || partida.YaVendio || partida.ClienteActual == null) return;
+            if (Form.ActiveForm != this) return;
+            tiempoMs -= timerTiempo.Interval;
+            Cliente cliente = partida.ClienteActual;
+            double resta = (double)tiempoMs / tiempoTotalMs;
+            int fase = resta <= 0 ? 3 : resta < 0.2 ? 2 : resta < 0.5 ? 1 : 0;
+            if (fase >= 1 && humor < 1) { humor = 1; dialogo = cliente.FraseImpaciente(partida.Azar); Recursos.Sonar("turno"); }
+            if (fase >= 2 && humor < 2) { humor = 2; dialogo = cliente.FraseImpaciente(partida.Azar); Recursos.Sonar("error"); }
+            if (humor == 2) vibrar++;
+            if (fase == 3) { SeFueEnojado(); return; }
+            Invalidate(new Rectangle(420, 104, 500, 380));
+        }
+
+        // Se acabo la paciencia: el cliente se va enojado, baja la reputacion y pasa el turno
+        private void SeFueEnojado()
+        {
+            timerTiempo.Stop();
+            sePaso = true;
+            esperando = true;
+            dialogo = partida.ClienteActual.FraseEnojado(partida.Azar) + "  (-8 de reputación)";
+            partida.JugadorActual.CambiarReputacion(-8);
+            Recursos.Sonar("error");
+            Actualizar();
+            timerPasar.Start();
+        }
+
+        // La linea de tiempo: tres tramos (tranquilo, impaciente, enojado) y una marca que avanza
+        private void DibujarTiempo(Graphics g)
+        {
+            if (tiempoTotalMs == 0 || partida.JugadorActual.EsBot || partida.JugadorActual.PierdeTurno) return;
+            double usado = sePaso ? 1 : 1 - (double)tiempoMs / tiempoTotalMs;
+            usado = Math.Max(0, Math.Min(1, usado));
+            int x0 = 432, y0 = 426, ancho = 340, alto = 11;
+            int t1 = ancho * 50 / 100, t2 = ancho * 30 / 100, t3 = ancho - t1 - t2;
+            Pixel.R(g, x0 - 3, y0 - 3, ancho + 6, alto + 6, Paleta.Negro);
+            Pixel.R(g, x0, y0, t1, alto, Paleta.Verde2);
+            Pixel.R(g, x0 + t1, y0, t2, alto, Paleta.Oro2);
+            Pixel.R(g, x0 + t1 + t2, y0, t3, alto, Paleta.Rosa2);
+            // lo ya gastado se oscurece y una marca clara va avanzando
+            int gastado = (int)(ancho * usado);
+            Pixel.R(g, x0, y0, gastado, alto, Color.FromArgb(150, 20, 10, 30));
+            Pixel.Texto(g, "TRANQUILO", x0 + t1 / 2, y0 + alto / 2, 7, Paleta.Crema, StringAlignment.Center);
+            Pixel.Texto(g, "IMPACIENTE", x0 + t1 + t2 / 2, y0 + alto / 2, 7, Paleta.Noche, StringAlignment.Center);
+            Pixel.Texto(g, "ENOJADO", x0 + t1 + t2 + t3 / 2, y0 + alto / 2, 7, Paleta.Crema, StringAlignment.Center);
+            Pixel.R(g, x0 + gastado - 3, y0 - 6, 6, alto + 12, Paleta.Crema);
+            Pixel.R(g, x0 + gastado - 5, y0 - 8, 10, 4, Paleta.Crema);
+            int seg = (int)Math.Ceiling(Math.Max(0, tiempoMs) / 1000.0);
+            Color cs = humor == 2 ? ((vibrar / 3 & 1) == 0 ? Paleta.Rosa : Paleta.Crema) : humor == 1 ? Paleta.Oro : Paleta.Verde;
+            Pixel.Texto(g, sePaso ? "¡SE FUE!" : $"{seg} s", 912, y0 + alto / 2, sePaso ? 10 : 12, cs, StringAlignment.Far);
         }
 
         // Al empezar un turno: el evento del día y lo que le hicieron al jugador
@@ -394,7 +469,7 @@ namespace PrograProyectoFinal
                     Pixel.R(g, f.X - 6, f.Y - 6, f.Width + 12, f.Height + 12, Paleta.Oro);
                 Pixel.R(g, f.X, f.Y, f.Width, f.Height, Paleta.LilaClaro);
                 Pixel.Sprite(g, Recursos.Autos[auto.Tipo, auto.Color], f.X + 8, f.Y + 18, 4);
-                Pixel.Texto(g, auto.Nombre, f.X + 148, f.Y + 34, 12, Paleta.Noche);
+                Pixel.TextoAjustado(g, auto.Nombre, f.X + 148, f.Y + 34, 12, Paleta.Noche, StringAlignment.Near, f.Width - 156);
                 Pixel.Texto(g, Pixel.Dinero(jugador.PrecioVenta(auto)), f.X + 148, f.Y + 70, 12, Paleta.Verde2);
                 if (auto.Estado != Auto.NORMAL)
                     Pixel.Texto(g, Auto.NombresEstado[auto.Estado], f.Right - 8, f.Y + 14, 7,
@@ -418,6 +493,7 @@ namespace PrograProyectoFinal
             Pixel.Texto(g, $"LOTE EN {Partida.Zonas[partida.Zona]}", 432, 474, 8, Paleta.Tenue);
             for (int x = 428; x < 920; x += 48)
                 Pixel.R(g, x, 420, 24, 4, Paleta.Morado3);
+            DibujarTiempo(g);
 
             // Evento del día
             if (partida.Evento != -1)
@@ -426,11 +502,15 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, $"HOY: {Partida.NombresEvento[partida.Evento]}", 670, 140, 11, Paleta.Noche, StringAlignment.Center);
             }
 
-            Pixel.R(g, 472, 176, 192, 240, Paleta.Negro);
-            Pixel.R(g, 480, 184, 176, 224, Paleta.Morado3);
+            int temblor = (humor == 2 && !esperando) || sePaso ? ((vibrar & 1) == 0 ? -4 : 4) : 0;
+            Color fondoCliente = humor == 2 && ((vibrar / 3 & 1) == 0) ? Paleta.Rosa2 : humor == 1 ? Paleta.Morado2 : Paleta.Morado3;
+            Pixel.R(g, 472 + temblor, 176, 192, 240, Paleta.Negro);
+            Pixel.R(g, 480 + temblor, 184, 176, 224, fondoCliente);
             if (cliente != null && !jugador.PierdeTurno)
             {
-                Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480, 200, 11);
+                Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480 + temblor, 200, 11);
+                if (humor == 1) Pixel.Texto(g, "...", 640, 206, 18, Paleta.Oro, StringAlignment.Far);
+                if (humor == 2) Pixel.Texto(g, "!!", 640, 206, 22, Paleta.Rosa, StringAlignment.Far);
                 Pixel.Texto(g, cliente.Nombre, 568, 452, 13, Paleta.Crema, StringAlignment.Center);
             }
             else
@@ -439,8 +519,8 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, "(nadie)", 568, 452, 13, Paleta.Tenue, StringAlignment.Center);
             }
 
-            Pixel.Globo(g, 684, 170, 228, 238);
-            DibujarDialogo(g, new Rectangle(704, 186, 196, 214));
+            Pixel.Globo(g, 684 + temblor, 170, 228, 238);
+            DibujarDialogo(g, new Rectangle(704 + temblor, 186, 196, 214));
 
             // ----- ranking -----
             Pixel.Panel(g, 940, 104, 320, 512, Paleta.Crema);
@@ -693,6 +773,7 @@ namespace PrograProyectoFinal
 
         private void PasarTurno()
         {
+            timerTiempo.Stop();
             timerPasar.Stop();
             timerBot.Stop();
             partida.SiguienteTurno();

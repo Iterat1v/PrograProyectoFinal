@@ -58,6 +58,16 @@ namespace PrograProyectoFinal
             Panel(g, x, y, w, h, relleno, Paleta.Negro);
         }
 
+        // Igual que Texto, pero si no cabe en "ancho" la letra se achica hasta que quepa (nombres largos de autos)
+        public static void TextoAjustado(Graphics g, string texto, int x, int y, float tam, Color color,
+                                         StringAlignment alineacion, int ancho)
+        {
+            float t = tam;
+            while (t > 5 && g.MeasureString(texto, Recursos.Letra(t)).Width > ancho)
+                t -= 0.5f;
+            Texto(g, texto, x, y, t, color, alineacion);
+        }
+
         // Texto centrado en "y" (como textBaseline = middle del mockup)
         public static void Texto(Graphics g, string texto, int x, int y, float tam, Color color,
                                  StringAlignment alineacion = StringAlignment.Near)

@@ -152,6 +152,8 @@ namespace PrograProyectoFinal
         public bool EsLibre => historia == null && semilla == 0;
         public int Tema => tema;
         public int IntentosMaximos => intentosDificultad[dificultad];
+        private static readonly int[] tiempoDificultad = { 60, 45, 30 };   // segundos que aguanta un cliente
+        public int TiempoTurno => tiempoDificultad[dificultad];
 
         public int Dificultad
         {
@@ -310,6 +312,8 @@ namespace PrograProyectoFinal
 
             cliente = new Cliente(nombresClientes[retrato], presupuesto, tipo, frase, retrato);
             cliente.FactorRecuerdo = factorRecuerdo;
+            // habla como su zona; 1 de cada 8 es un visitante de otro lado (norteno, yucateco, argentino o gringo)
+            cliente.Hablar(azar.Next(8) == 0 ? Habla.Visitante(azar) : zona, azar);
             int favorito = azar.Next(Cliente.NombresColor.Length);
             int odiado;
             do odiado = azar.Next(Cliente.NombresColor.Length); while (odiado == favorito);
