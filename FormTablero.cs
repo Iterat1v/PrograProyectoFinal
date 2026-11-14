@@ -32,6 +32,13 @@ namespace PrograProyectoFinal
         private System.Diagnostics.Stopwatch swPaso = new System.Diagnostics.Stopwatch();
         private BotonPixel btnRapido;
 
+        // ----- Pausa: congela el reloj del cliente, el turno del bot y las animaciones -----
+        private bool pausado = false;
+        private BotonPixel btnPausa;
+        private bool botEstabaJugando, pasarEstaba;
+        private System.Collections.Generic.List<Control> bloqueados = new System.Collections.Generic.List<Control>();
+        private string ventaTitulo = "¡VENDISTE!";
+
         // ----- Efecto de venta: el auto sale manejando, sello de VENDIDO y lluvia de monedas -----
         private const int VENTA_VIDA = 60;         // ticks de 30 ms
         private int ventaVida = 0;
@@ -60,7 +67,8 @@ namespace PrograProyectoFinal
             btnSiguiente.Colores(Paleta.LilaClaro, Paleta.Crema2);
             btnOficina = Boton("OFICINA", 874, 12, 116, 62, Paleta.Agua, Paleta.Agua2, btnOficina_Click, 9);
             Boton("?", 800, 12, 62, 62, Paleta.LilaClaro, Paleta.Crema2, (s, e) => MostrarTutorial(), 15);
-            btnRapido = Boton(botRapido ? "NORMAL" : "RÁPIDO", 940, 636, 320, 60, Paleta.Agua, Paleta.Agua2, (s, e) => AlternarRapido(), 11);
+            btnPausa = Boton("PAUSA", 940, 636, 150, 60, Paleta.Oro, Paleta.Oro2, (s, e) => AlternarPausa(), 11);
+            btnRapido = Boton(botRapido ? "NORMAL" : "RÁPIDO", 1100, 636, 160, 60, Paleta.Agua, Paleta.Agua2, (s, e) => AlternarRapido(), 11);
             btnRapido.Visible = false;
             timerLetrero.Tick += (s, e) =>
             {
@@ -97,6 +105,7 @@ namespace PrograProyectoFinal
 
         private void TickAnim()
         {
+            if (pausado) return;
             if (entrada > 0) entrada = Math.Max(0, entrada - (entrada > 80 ? 22 : 9));   // llega rapido y frena al final
             if (letras < ultimoDialogo.Length) letras += 2;
             if (ventaVida > 0) ventaVida--;
@@ -113,8 +122,9 @@ namespace PrograProyectoFinal
             Invalidate(new Rectangle(a.X, a.Y, b2.X - a.X, b2.Y - a.Y));
         }
 
-        private void IniciarVenta(Auto auto, double dinero)
+        private void IniciarVenta(Auto auto, double dinero, string titulo = "¡VENDISTE!")
         {
+            ventaTitulo = titulo;
             autoVendido = auto;
             ventaDinero = dinero;
             ventaVida = VENTA_VIDA;
@@ -146,17 +156,50 @@ namespace PrograProyectoFinal
                 if (my < 470) Pixel.R(g, mx, my, 10, 10, i % 3 == 0 ? Paleta.Oro2 : Paleta.Oro);
             }
 
-            // sello de VENDIDO: entra con un golpe (grande y se asienta) y se ve un poco chueco
-            float tam = 40 + Math.Max(0, 10 - t) * 3;
-            var estado = g.Save();
-            g.TranslateTransform(566, 270);
-            g.RotateTransform(-9);
-            Pixel.SombraTexto(g, "¡VENDIDO!", 0, 0, tam, Paleta.Oro, Paleta.Rosa2);
-            if (ventaDinero > 0)
-                Pixel.Texto(g, "+" + Pixel.Dinero(ventaDinero), 0, 48, 16, Paleta.Verde, StringAlignment.Center);
-            g.Restore(estado);
-
             g.Clip = recorte;
+        }
+
+        // Banner grande y al frente: cruza toda la pantalla cuando se vende
+        private void DibujarBannerVenta(Graphics g)
+        {
+            if (ventaVida <= 0) return;
+            int t = VENTA_VIDA - ventaVida;
+            int x = 0;
+            if (t < 8) x = -Pixel.ANCHO + t * Pixel.ANCHO / 8;
+            else if (ventaVida < 8) x = (8 - ventaVida) * Pixel.ANCHO / 8;
+            float tam = 56 + Math.Max(0, 10 - t) * 2 + (float)(Math.Sin(t / 3.0) * 2);
+            Pixel.R(g, x, 262, Pixel.ANCHO, 176, Paleta.Negro);
+            Pixel.R(g, x, 270, Pixel.ANCHO, 160, ((t / 4) & 1) == 0 ? Paleta.Verde : Paleta.Verde2);
+            Pixel.SombraTexto(g, ventaTitulo, x + 640, 336, tam, Paleta.Crema, Paleta.Morado3);
+            string detalle = ventaDinero > 0 ? "+" + Pixel.Dinero(ventaDinero) : "";
+            if (autoVendido != null) detalle = autoVendido.Nombre + "   " + detalle;
+            Pixel.Texto(g, detalle, x + 640, 404, 20, Paleta.Oro, StringAlignment.Center);
+        }
+
+        private void AlternarPausa()
+        {
+            pausado = !pausado;
+            if (pausado)
+            {
+                botEstabaJugando = timerBot.Enabled;
+                pasarEstaba = timerPasar.Enabled;
+                timerBot.Stop();
+                timerPasar.Stop();
+                bloqueados.Clear();
+                foreach (Control c in Controls)
+                    if (c != btnPausa && c.Enabled) { c.Enabled = false; bloqueados.Add(c); }
+                btnPausa.Text = "REANUDAR";
+            }
+            else
+            {
+                foreach (Control c in bloqueados) c.Enabled = true;
+                bloqueados.Clear();
+                btnPausa.Text = "PAUSA";
+                if (botEstabaJugando) { timerBot.Start(); swPaso.Restart(); }
+                if (pasarEstaba) timerPasar.Start();
+            }
+            Recursos.Sonar("menu");
+            Invalidate();
         }
 
         private void AlternarRapido()
@@ -182,6 +225,7 @@ namespace PrograProyectoFinal
         // Cada 0.1 s. El reloj solo corre con esta ventana al frente: se pausa solo con el menu, el mercado o el regateo.
         private void TickTiempo()
         {
+            if (pausado) return;
             if (tiempoTotalMs == 0 || esperando || partida.YaVendio || partida.ClienteActual == null) return;
             if (Form.ActiveForm != this) return;
             tiempoMs -= timerTiempo.Interval;
@@ -674,6 +718,14 @@ namespace PrograProyectoFinal
             DibujarVenta(g);
             DibujarFlotante(g);
             DibujarLetrero(g);
+            DibujarBannerVenta(g);
+            if (pausado)
+            {
+                Pixel.R(g, 0, 0, Pixel.ANCHO, Pixel.ALTO, Color.FromArgb(190, 12, 4, 30));
+                Pixel.SombraTexto(g, "PAUSA", 640, 300, 76, Paleta.Oro, Paleta.Rosa2);
+                Pixel.Texto(g, "El reloj del cliente y el turno del bot estan detenidos", 640, 384, 14, Paleta.Crema, StringAlignment.Center);
+                Pixel.Texto(g, "REANUDAR o la tecla P para seguir", 640, 414, 12, Paleta.Agua, StringAlignment.Center);
+            }
         }
 
         private void DibujarFlotante(Graphics g)
@@ -713,16 +765,9 @@ namespace PrograProyectoFinal
                 if (!timerAnim.Enabled) timerAnim.Start();
             }
             string visible = letras >= dialogo.Length ? dialogo : dialogo.Substring(0, Math.Max(0, letras));
-            float[] tamanos = { 13, 12, 11, 10, 9, 8, 7 };
-            foreach (float tam in tamanos)
-            {
-                SizeF medida = g.MeasureString(dialogo, Recursos.Letra(tam), area.Width);
-                if (medida.Height <= area.Height || tam == 7)
-                {
-                    Pixel.Parrafo(g, visible, area, tam, Paleta.Noche);
-                    return;
-                }
-            }
+            // el tamano se calcula con la frase completa (para que no cambie mientras se escribe)
+            float tam = Pixel.TamQueCabe(g, dialogo, area, 13);
+            Pixel.Parrafo(g, visible, area, tam, Paleta.Noche);
         }
 
         protected override void OnMouseClick(MouseEventArgs e)
@@ -874,7 +919,7 @@ namespace PrograProyectoFinal
                     {
                         MostrarFlotante(recibido);
                         Recursos.Sonar("venta");
-                        IniciarVenta(null, recibido);
+                        IniciarVenta(null, recibido, quien.ToUpper() + " VENDIO");
                         if (partida.TalVezLlegaBro())
                         {
                             Recursos.Sonar("bro");
@@ -1012,7 +1057,9 @@ namespace PrograProyectoFinal
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (e.KeyCode == Keys.Escape)
+            if (e.KeyCode == Keys.P)
+                AlternarPausa();
+            else if (e.KeyCode == Keys.Escape && !pausado)
                 AbrirMenu();
         }
     }

@@ -89,6 +89,26 @@ namespace PrograProyectoFinal
         }
 
         // Texto que se acomoda en varias líneas dentro de un rectángulo
+        // El tamano de letra mas grande (hasta "tam") con el que el texto completo cabe en el area.
+        // Mide con el MISMO formato con que se dibuja, para que lo medido sea lo que de verdad se ve.
+        public static float TamQueCabe(Graphics g, string texto, Rectangle area, float tam, StringFormat formato = null)
+        {
+            bool propio = formato == null;
+            if (propio) { formato = new StringFormat(); formato.LineAlignment = StringAlignment.Near; }
+            try
+            {
+                float t = tam;
+                while (t > 6)
+                {
+                    SizeF m = g.MeasureString(texto, Recursos.Letra(t), area.Width, formato);
+                    if (m.Height <= area.Height - 3) break;
+                    t -= 0.5f;
+                }
+                return t;
+            }
+            finally { if (propio) formato.Dispose(); }
+        }
+
         public static void Parrafo(Graphics g, string texto, Rectangle area, float tam, Color color,
                                    StringAlignment alineacion = StringAlignment.Near)
         {
@@ -97,7 +117,9 @@ namespace PrograProyectoFinal
             {
                 formato.Alignment = alineacion;
                 formato.LineAlignment = StringAlignment.Near;
-                g.DrawString(texto, Recursos.Letra(tam), brocha, area, formato);
+                // si el texto no cabe en el area, la letra se achica hasta que quepa: nunca se corta
+                float t = TamQueCabe(g, texto, area, tam, formato);
+                g.DrawString(texto, Recursos.Letra(t), brocha, area, formato);
             }
         }
 

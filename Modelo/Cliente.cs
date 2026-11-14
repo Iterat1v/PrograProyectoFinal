@@ -168,7 +168,9 @@ namespace PrograProyectoFinal
             {
                 if (AceptaCualquiera) return saludoEstilo + frase;
                 string color = colorBuscado == -1 ? "" : $" Y lo quiero {NombresColor[colorBuscado]}.";
-                return $"{saludoEstilo}{frase} Traigo ${presupuesto:N0}.{color}";
+                string cuerpo = $"{frase} Traigo ${presupuesto:N0}.{color}";
+                // si ya viene largo (historia + recuerdo), se quita el saludo de relleno para que no se corte
+                return saludoEstilo.Length + cuerpo.Length > 150 ? cuerpo : saludoEstilo + cuerpo;
             }
         }
     }
