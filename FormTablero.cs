@@ -32,6 +32,12 @@ namespace PrograProyectoFinal
         private System.Diagnostics.Stopwatch swPaso = new System.Diagnostics.Stopwatch();
         private BotonPixel btnRapido;
 
+        // ----- Efecto de venta: el auto sale manejando, sello de VENDIDO y lluvia de monedas -----
+        private const int VENTA_VIDA = 60;         // ticks de 30 ms
+        private int ventaVida = 0;
+        private Auto autoVendido = null;
+        private double ventaDinero = 0;
+
         // Letrero grande de "TURNO DE ..." que aparece al empezar cada turno
         private string letrero = "";
         private int letreroVida = 0;
@@ -93,7 +99,8 @@ namespace PrograProyectoFinal
         {
             if (entrada > 0) entrada = Math.Max(0, entrada - (entrada > 80 ? 22 : 9));   // llega rapido y frena al final
             if (letras < ultimoDialogo.Length) letras += 2;
-            if (entrada == 0 && letras >= ultimoDialogo.Length && !timerBot.Enabled) timerAnim.Stop();
+            if (ventaVida > 0) ventaVida--;
+            if (entrada == 0 && letras >= ultimoDialogo.Length && !timerBot.Enabled && ventaVida == 0) timerAnim.Stop();
             Repintar(new Rectangle(420, 104, 500, 380));
         }
 
@@ -104,6 +111,52 @@ namespace PrograProyectoFinal
             Point a = Aqui(zonaDiseno.X, zonaDiseno.Y);
             Point b2 = Aqui(zonaDiseno.Right, zonaDiseno.Bottom);
             Invalidate(new Rectangle(a.X, a.Y, b2.X - a.X, b2.Y - a.Y));
+        }
+
+        private void IniciarVenta(Auto auto, double dinero)
+        {
+            autoVendido = auto;
+            ventaDinero = dinero;
+            ventaVida = VENTA_VIDA;
+            timerAnim.Start();
+        }
+
+        private void DibujarVenta(Graphics g)
+        {
+            if (ventaVida <= 0) return;
+            int t = VENTA_VIDA - ventaVida;                       // 0 .. 59
+            Region recorte = g.Clip;
+            g.SetClip(new Rectangle(420, 104, 500, 380));
+
+            // el auto vendido sale manejando por el piso, de izquierda a derecha, acelerando
+            if (autoVendido != null)
+            {
+                double avance = Math.Min(1.0, t / 44.0);
+                int x = 440 + (int)(avance * avance * 520);
+                Pixel.Sprite(g, Recursos.Autos[autoVendido.Tipo, autoVendido.Color], x, 330, 4);
+                if (t < 40) Pixel.R(g, x - 30, 388, 24, 6, Paleta.Tenue);       // humito
+            }
+
+            // lluvia de monedas desde el cliente
+            for (int i = 0; i < 16; i++)
+            {
+                double ang = i * 2 * Math.PI / 16 + 0.3;
+                double vx = Math.Cos(ang) * (3 + i % 4), vy = Math.Sin(ang) * (3 + i % 3) - 7;
+                int mx = 568 + (int)(vx * t), my = 300 + (int)(vy * t + 0.35 * t * t);
+                if (my < 470) Pixel.R(g, mx, my, 10, 10, i % 3 == 0 ? Paleta.Oro2 : Paleta.Oro);
+            }
+
+            // sello de VENDIDO: entra con un golpe (grande y se asienta) y se ve un poco chueco
+            float tam = 40 + Math.Max(0, 10 - t) * 3;
+            var estado = g.Save();
+            g.TranslateTransform(566, 270);
+            g.RotateTransform(-9);
+            Pixel.SombraTexto(g, "¡VENDIDO!", 0, 0, tam, Paleta.Oro, Paleta.Rosa2);
+            if (ventaDinero > 0)
+                Pixel.Texto(g, "+" + Pixel.Dinero(ventaDinero), 0, 48, 16, Paleta.Verde, StringAlignment.Center);
+            g.Restore(estado);
+
+            g.Clip = recorte;
         }
 
         private void AlternarRapido()
@@ -184,6 +237,7 @@ namespace PrograProyectoFinal
                 return;
             }
             if (tiempoTotalMs == 0 || partida.JugadorActual.EsBot || partida.JugadorActual.PierdeTurno) return;
+            if (esperando && !sePaso) return;   // ya vendio: la barra de paciencia se esconde
             double usado = sePaso ? 1 : 1 - (double)tiempoMs / tiempoTotalMs;
             usado = Math.Max(0, Math.Min(1, usado));
             int x0 = 432, y0 = 426, ancho = 340, alto = 11;
@@ -617,6 +671,7 @@ namespace PrograProyectoFinal
                     Pixel.Texto(g, etiqueta[r.NivelBot], 1232, y + 76, 7, r.NivelBot == 4 ? Paleta.Oro2 : Paleta.Lila, StringAlignment.Far);
                 }
             }
+            DibujarVenta(g);
             DibujarFlotante(g);
             DibujarLetrero(g);
         }
@@ -709,12 +764,16 @@ namespace PrograProyectoFinal
             }
 
             bool vendido;
+            Auto aVender = partida.JugadorActual.ObtenerAuto(seleccionado);
             using (FormNegociar negociar = new FormNegociar(partida, seleccionado))
             {
                 vendido = negociar.ShowDialog(this) == DialogResult.OK;
                 dialogo = negociar.Resultado == "" ? dialogo : negociar.Resultado;
                 if (vendido)
+                {
                     MostrarFlotante(negociar.Recibido);
+                    IniciarVenta(aVender, negociar.Recibido);
+                }
             }
             if (!vendido)
             {
@@ -815,6 +874,7 @@ namespace PrograProyectoFinal
                     {
                         MostrarFlotante(recibido);
                         Recursos.Sonar("venta");
+                        IniciarVenta(null, recibido);
                         if (partida.TalVezLlegaBro())
                         {
                             Recursos.Sonar("bro");
