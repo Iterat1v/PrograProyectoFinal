@@ -22,21 +22,21 @@ namespace PrograProyectoFinal
                 new[] { "¡Quihubo, jefe!", "Ora, patrón, ¿qué me tiene?", "Buenas, ¿a cómo la unidad?" },
                 new[] { "¡Simón, jefe, me lo llevo!", "¡Chido! Trato hecho, patrón.", "Va, va, ¡órale! Me lo quedo." },
                 new[] { "Está bien caro, jefe. Le doy {0}.", "Ay, chale. Ofrezco {0} y ya.", "A ver, a ver... {0} y nos damos la mano." },
-                new[] { "¡No manches, jefe! Le doy {0} y ya.", "¡Está bien cañón ese precio! {0} y no más.", "¿Qué se fumó? {0}, es mi última." },
+                new[] { "¡No manches, jefe! Le doy {0} y ya.", "¡Está bien cañón ese precio! {0} y no más.", "¿Qué le pasa, jefe? {0}, es mi última." },
                 new[] { "Yo busco {0}, jefe... pero si me lo deja en {1} lo pienso.", "No es lo que busco, patrón. Con {1} le entro." },
                 new[] { "Jefe, ándele, que se me hace tarde.", "¿Ya merito, jefe? Traigo prisa.", "Oiga, ¿me va a atender o qué?" },
-                new[] { "¡Ya me cansé, jefe! Me voy a otro lote.", "¡Qué poca madre, tanto tiempo! Ahí nos vidrios.", "¡Nel! Tardó mucho, mejor me voy." }
+                new[] { "¡Ya me cansé, jefe! Me voy a otro lote.", "¡Qué mala onda, tanto tiempo! Ahí nos vemos.", "¡No! Tardó mucho, mejor me voy." }
             },
             // ----- NEZA: barrio, con "raza" y "carnal" -----
             new[]
             {
                 new[] { "¡Qué onda, raza!", "Ey, carnal, ¿qué hay de chido?", "¡Quiúbole! Vengo por un cochecito." },
-                new[] { "¡Nel pastel, qué buen precio! Me lo llevo, raza.", "¡Simón, carnal, trato hecho!", "¡Órale, ahí nos vidrios! Me lo quedo." },
-                new[] { "Se me hace caro, carnal. Te doy {0}.", "Ay, raza, no la hagas. {0} y es mucho.", "Mira, carnalito, {0} y cerramos." },
+                new[] { "¡Qué buen precio! Me lo llevo, raza.", "¡Simón, carnal, trato hecho!", "¡Órale, va! Me lo quedo." },
+                new[] { "Se me hace caro, carnal. Te doy {0}.", "Ay, raza, no exageres. {0} y es mucho.", "Mira, carnalito, {0} y cerramos." },
                 new[] { "¡Chale, carnal, no te pases! {0}.", "¡Ni de loco! Te doy {0} y ya, raza.", "Estás bien loquito, ¿no? {0} y nada más." },
                 new[] { "Yo andaba buscando {0}, carnal... pero a {1} sí le entro.", "Ese no es lo que quiero, raza. Dámelo en {1}." },
                 new[] { "Carnal, ándale, que la raza me espera.", "¿Ya mero, carnal? Se me va el micro.", "Hey, ¿me vas a atender o cómo?" },
-                new[] { "¡Ya me llevó el tren, carnal! Me voy a otro lado.", "¡Qué gacho, tanto rato! Ahí te ves, raza.", "¡Chale! Tardaste un chorro, me voy." }
+                new[] { "¡Ya me ganó la tarde, carnal! Me voy a otro lado.", "¡Qué gacho, tanto rato! Ahí te ves, raza.", "¡Chale! Tardaste un chorro, me voy." }
             },
             // ----- COYOACÁN: bohemio, de café y plaza -----
             new[]
@@ -75,7 +75,7 @@ namespace PrograProyectoFinal
             new[]
             {
                 new[] { "¡Quiubo, compa! ¿Cómo andamos?", "¡Ándale pues! ¿Qué tiene por aquí, mi buen?", "Buenas, compadre. Vengo de Monterrey por un carro." },
-                new[] { "¡Ándale pues, me lo llevo, compa!", "¡Eso! Trato hecho, mi buen.", "¡Ái nos vidrios! Me lo quedo." },
+                new[] { "¡Ándale pues, me lo llevo, compa!", "¡Eso! Trato hecho, mi buen.", "¡Eso! Me lo quedo, compa." },
                 new[] { "Está muy carrrro, compa. Le doy {0}.", "Pos no, mi buen. {0} y nos echamos unas carnes asadas.", "Mire, compadre, {0} y le invito unas cervezas." },
                 new[] { "¡Ora sí que se pasó, compa! {0} y ya.", "¡Ni que fuera de oro! Le doy {0}.", "¡Eso no, mi buen! {0} es lo justo." },
                 new[] { "Yo buscaba {0}, compa... pero en {1} le entro.", "No es lo que ando buscando. Con {1} lo pienso, compadre." },
@@ -85,13 +85,13 @@ namespace PrograProyectoFinal
             // ----- YUCATECO: mezcla con maya -----
             new[]
             {
-                new[] { "¡Bix a bel! ¿Cómo está, mi niño?", "¡Ma'alob k'iin! Vengo por un carro, ¿qué hay?", "Buenas, mi niño. ¿Tiene algo bueno?" },
-                new[] { "¡Ma'alob! Me lo llevo, mi niño.", "¡Qué bueno, mi niño! Trato hecho.", "¡Ma'alob! Me gusta, me lo quedo." },
+                new[] { "¡Buenas, mi niño! ¿Cómo amaneció?", "¡Qué calor, mi niño! ¿Tiene algún carrito?", "Buenas, vengo desde Mérida por un carro." },
+                new[] { "¡Qué bueno, mi niño! Me lo llevo.", "¡Está bien! Trato hecho, mi niño.", "Me gusta mucho, mi niño. Me lo quedo." },
                 new[] { "Está caro, mi niño. Le doy {0}.", "Ay, no tanto. {0} y listo.", "A ver, a ver... {0}, mi niño." },
-                new[] { "¡Ni que fuera de oro, mi niño! {0} y ya.", "¡Ba'ax ka wa'alik! Le doy {0}.", "Eso no, mi niño. {0}, no más." },
+                new[] { "¡Ni que fuera de oro, mi niño! {0} y ya.", "¡Eso es muchísimo, mi niño! Le doy {0}.", "Eso no, mi niño. {0}, no más." },
                 new[] { "Yo buscaba {0}, mi niño... pero en {1} lo veo.", "No es el que quiero. Con {1}, quién sabe." },
                 new[] { "Mi niño, ándele, que hace calor.", "¿Ya merito? Me estoy derritiendo.", "Oiga, ¿me va a atender?" },
-                new[] { "¡Ya me cansé, mi niño! Me voy a otro lado.", "¡Tanto tiempo! Me voy, ¿eh?", "¡Ma'alob... no! Así no. Adiós." }
+                new[] { "¡Ya me cansé, mi niño! Me voy a otro lado.", "¡Tanto tiempo! Me voy, ¿eh?", "¡Con este calor y tanta espera! Me voy, mi niño." }
             },
             // ----- ARGENTINO -----
             new[]
