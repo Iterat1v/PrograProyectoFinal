@@ -6,6 +6,7 @@
         private Concesionario jugador;
         private int indice;
         private Auto auto;
+        private bool eligiendoColor = false;       // ensenando los 8 colores para pintar
 
         public string Resultado { get; private set; } = "";
         public double Rematado { get; private set; } = 0;
@@ -25,6 +26,8 @@
                                    222, 380, 184, 72, Paleta.Rosa, Paleta.Rosa2, ArreglarFalla, 8);
             BotonPixel tun = Boton($"TUNEAR ${auto.CostoTunear(mec) / 1000:N0}K", 414, 380, 184, 72, Paleta.Agua, Paleta.Agua2, Tunear, 9);
             Boton($"REMATAR ${jugador.PrecioRemate(auto) / 1000:N0}K", 606, 380, 184, 72, Paleta.Oro, Paleta.Oro2, Rematar, 9);
+            Boton($"PINTAR ${jugador.CostoPintar / 1000:N0}K", 30, 470, 240, 66, Paleta.Lila, Paleta.Morado3,
+                  (s, e) => { eligiendoColor = !eligiendoColor; Recursos.Sonar("menu"); Invalidate(); }, 11);
             Boton("CERRAR", 290, 470, 240, 66, Paleta.Crema, Paleta.Crema2, (s, e) => Close());
             rep.Enabled = auto.Estado == Auto.CHOCADO;
             fal.Enabled = auto.FallaTieneArreglo;
@@ -57,12 +60,54 @@
             if (auto.TieneFalla) estado = auto.NombreFalla;
             Pixel.Texto(g, estado, 190, 322, auto.TieneFalla ? 9 : 11, auto.Estado == Auto.CHOCADO || auto.TieneFalla ? Paleta.Rosa2 : Paleta.Verde2, StringAlignment.Center);
 
+            if (eligiendoColor)
+            {
+                DibujarColores(g);
+                Pixel.Texto(g, $"Te ha costado {Pixel.Dinero(auto.Costo)}  ·  vale {Pixel.Dinero(auto.ValorActual())}", 410, 350, 10, Paleta.Gris, StringAlignment.Center);
+                return;
+            }
             string texto = "Reparar: un chocado vale la mitad. Si lo vendes así, baja tu reputación.\n" +
                            "Arreglar falla: la falla le baja el valor y el cliente regresa enojado.\n" +
-                           "Tunear: vale 30 % más.\nRematar: el lote de enfrente te da el 70 %.";
+                           "Tunear: vale 30 % más.\nRematar: el lote de enfrente te da el 70 %.\nPintar: el color que quieras, aunque esté chocado.";
             if (jugador.TieneMecanico) texto += "\nTu mecánico cobra la mitad.";
             Pixel.Parrafo(g, texto, new Rectangle(370, 100, 420, 260), 10, Paleta.Noche);
             Pixel.Texto(g, $"Te ha costado {Pixel.Dinero(auto.Costo)}  ·  vale {Pixel.Dinero(auto.ValorActual())}", 410, 350, 10, Paleta.Gris, StringAlignment.Center);
+        }
+
+        // 8 colores en 2 filas de 4: cada uno es el mismo auto ya pintado
+        private Rectangle Muestra(int k)
+        {
+            return new Rectangle(372 + (k % 4) * 104, 140 + (k / 4) * 100, 98, 78);
+        }
+
+        private void DibujarColores(Graphics g)
+        {
+            Pixel.Texto(g, $"ESCOGE EL COLOR  ·  pintar cuesta {Pixel.Dinero(jugador.CostoPintar)}", 580, 116, 11, Paleta.Morado2, StringAlignment.Center);
+            for (int k = 0; k < Cliente.NombresColor.Length; k++)
+            {
+                Rectangle r = Muestra(k);
+                bool actual = k == auto.Color;
+                Pixel.R(g, r.X - 4, r.Y - 4, r.Width + 8, r.Height + 8, actual ? Paleta.Oro : Paleta.Negro);
+                Pixel.R(g, r.X, r.Y, r.Width, r.Height, Paleta.LilaClaro);
+                Pixel.Sprite(g, Recursos.Autos[auto.Tipo, k], r.X + 1, r.Y + 6, 3);
+                string nombre = Cliente.NombresColor[k];
+                Pixel.Texto(g, actual ? "ACTUAL" : nombre.ToUpper(), r.X + r.Width / 2, r.Bottom - 8, 8, actual ? Paleta.Oro2 : Paleta.Noche, StringAlignment.Center);
+            }
+        }
+
+        protected override void OnMouseClick(MouseEventArgs e)
+        {
+            base.OnMouseClick(e);
+            if (!eligiendoColor) return;
+            for (int k = 0; k < Cliente.NombresColor.Length; k++)
+                if (Muestra(k).Contains(e.Location))
+                {
+                    int color = k;
+                    string nombreColor = Cliente.NombresColor[color];
+                    string estado = auto.Estado == Auto.CHOCADO ? " (sigue chocado: repáralo si quieres venderlo mejor)" : "";
+                    Terminar(jugador.Pintar(indice, color), $"Pintaste el {auto.Nombre} de {nombreColor}.{estado}");
+                    return;
+                }
         }
 
         private void Terminar(string error, string exito)

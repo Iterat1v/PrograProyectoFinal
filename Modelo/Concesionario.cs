@@ -252,6 +252,21 @@ namespace PrograProyectoFinal
             return null;
         }
 
+        // Pintar cualquier auto del color que se quiera, tambien los chocados (el mecanico cobra la mitad)
+        public double CostoPintar => PINTURA * (tieneMecanico ? 0.5 : 1);
+
+        public string Pintar(int indice, int color)
+        {
+            Auto auto = autos[indice];
+            if (auto.Color == color) return "Ya es de ese color.";
+            double costo = CostoPintar;
+            if (costo > dinero) return $"No te alcanza: pintarlo cuesta ${costo:N0}.";
+            Dinero -= costo;
+            auto.Costo += costo;
+            auto.Color = color;
+            return null;
+        }
+
         public string ArreglarFalla(int indice)
         {
             Auto auto = autos[indice];
