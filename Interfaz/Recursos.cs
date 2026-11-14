@@ -97,12 +97,23 @@ namespace PrograProyectoFinal
         }
 
         // Toca un efecto: Recursos.Sonar("venta"). Play() no congela la pantalla.
+        // El mismo sonido no se repite en menos de 180 ms: si algo lo dispara en cadena, no suena a metralleta
+        private static readonly long[] ultimoSonido = new long[64];
+
         public static void Sonar(string nombre)
         {
             if (!SonidosActivos) return;
+            long ahora = Environment.TickCount64;
             for (int i = 0; i < nombresSonidos.Length; i++)
                 if (nombresSonidos[i] == nombre && sonidos[i] != null)
+                {
+                    if (i < ultimoSonido.Length)
+                    {
+                        if (ahora - ultimoSonido[i] < 180) return;
+                        ultimoSonido[i] = ahora;
+                    }
                     sonidos[i].Play();
+                }
         }
 
         public static void Musica(bool tocar)

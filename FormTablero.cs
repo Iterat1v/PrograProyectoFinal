@@ -21,7 +21,13 @@ namespace PrograProyectoFinal
         private bool sePaso = false;               // ya se fue enojado
 
         // ----- Animaciones del cliente: entra deslizandose y su frase se escribe letra por letra -----
-        private System.Windows.Forms.Timer timerAnim = new System.Windows.Forms.Timer { Interval = 30 };
+        private System.Windows.Forms.Timer timerAnim = new System.Windows.Forms.Timer { Interval = 50 };   // 20 cuadros por segundo
+        private System.Diagnostics.Stopwatch relojPintado = new System.Diagnostics.Stopwatch();
+        private int ultimoPintadoMs = 0;           // lo que tardo el ultimo dibujo completo
+        private int salto = 0;
+
+        // Si la compu va apretada (dibujos de mas de 40 ms) las animaciones se saltan cuadros en vez de ahogarla
+        private bool Apretada() => ultimoPintadoMs > 40 && (++salto & 1) == 1;
         private int entrada = 0;                   // pixeles que le faltan para llegar a su lugar
         private string ultimoDialogo = "";
         private int letras = 0;                    // cuantas letras de la frase se ven ya
@@ -106,6 +112,7 @@ namespace PrograProyectoFinal
         private void TickAnim()
         {
             if (pausado) return;
+            if (Apretada()) return;
             if (entrada > 0) entrada = Math.Max(0, entrada - (entrada > 80 ? 22 : 9));   // llega rapido y frena al final
             if (letras < ultimoDialogo.Length) letras += 2;
             if (ventaVida > 0) ventaVida--;
@@ -226,6 +233,7 @@ namespace PrograProyectoFinal
         private void TickTiempo()
         {
             if (pausado) return;
+            // (el reloj SI sigue contando aunque se salte el dibujo)
             if (tiempoTotalMs == 0 || esperando || partida.YaVendio || partida.ClienteActual == null) return;
             if (Form.ActiveForm != this) return;
             tiempoMs -= timerTiempo.Interval;
@@ -236,7 +244,8 @@ namespace PrograProyectoFinal
             if (fase >= 2 && humor < 2) { humor = 2; dialogo = cliente.FraseImpaciente(partida.Azar); Recursos.Sonar("error"); }
             if (humor == 2) vibrar++;
             if (fase == 3) { SeFueEnojado(); return; }
-            Repintar(new Rectangle(420, 104, 500, 380));
+            if (humor == 2 && !Apretada()) Repintar(new Rectangle(420, 104, 500, 380));   // tiembla: todo el showroom
+            else Repintar(new Rectangle(420, 416, 500, 50));   // solo la franja de la barra, suave cada 100 ms
         }
 
         // Se acabo la paciencia: el cliente se va enojado, baja la reputacion y pasa el turno
@@ -591,6 +600,7 @@ namespace PrograProyectoFinal
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
+            relojPintado.Restart();
             Graphics g = e.Graphics;
             Concesionario jugador = partida.JugadorActual;
             Cliente cliente = partida.ClienteActual;
@@ -727,6 +737,7 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, "El reloj del cliente y el turno del bot estan detenidos", 640, 384, 14, Paleta.Crema, StringAlignment.Center);
                 Pixel.Texto(g, "REANUDAR o la tecla P para seguir", 640, 414, 12, Paleta.Agua, StringAlignment.Center);
             }
+            ultimoPintadoMs = (int)relojPintado.ElapsedMilliseconds;
         }
 
         private void DibujarFlotante(Graphics g)

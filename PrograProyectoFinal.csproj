@@ -9,6 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- el bot jugador de prueba (Soak) usa las clases internas del juego -->
+    <InternalsVisibleTo Include="Soak" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Assets\**\*">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
