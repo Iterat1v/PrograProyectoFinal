@@ -16,16 +16,16 @@ namespace PrograProyectoFinal
         // Cada estilo: [0] saludos, [1] acepta, [2] contraoferta, [3] "estás loco", [4] otro tipo, [5] impaciente, [6] enojado
         private static readonly string[][][] textos =
         {
-            // ----- ECATEPEC: barrio, directo -----
+            // ----- ECATEPEC: ñero, de barrio -----
             new[]
             {
-                new[] { "¡Quihubo, jefe!", "Ora, patrón, ¿qué me tiene?", "Buenas, ¿a cómo la unidad?" },
-                new[] { "¡Simón, jefe, me lo llevo!", "¡Chido! Trato hecho, patrón.", "Va, va, ¡órale! Me lo quedo." },
-                new[] { "Está bien caro, jefe. Le doy {0}.", "Ay, chale. Ofrezco {0} y ya.", "A ver, a ver... {0} y nos damos la mano." },
-                new[] { "¡No manches, jefe! Le doy {0} y ya.", "¡Está bien cañón ese precio! {0} y no más.", "¿Qué le pasa, jefe? {0}, es mi última." },
-                new[] { "Yo busco {0}, jefe... pero si me lo deja en {1} lo pienso.", "No es lo que busco, patrón. Con {1} le entro." },
-                new[] { "Jefe, ándele, que se me hace tarde.", "¿Ya merito, jefe? Traigo prisa.", "Oiga, ¿me va a atender o qué?" },
-                new[] { "¡Ya me cansé, jefe! Me voy a otro lote.", "¡Qué mala onda, tanto tiempo! Ahí nos vemos.", "¡No! Tardó mucho, mejor me voy." }
+                new[] { "¡Quihúbole, carnal! ¿Qué onda con los carros?", "Simón, ¿qué rollo, ñero? Ando buscando un carro.", "¡Ala! ¿Qué hay de chido pa' mover, vato?" },
+                new[] { "¡Simón, carnal, me lo llevo!", "¡A todo dar! Trato hecho, ñero.", "¡Sale y vale! Me lo quedo, vato." },
+                new[] { "Ta' bien caro, carnal. Te doy {0} y ya.", "Chale, ñero, no te pases de lanza. {0}.", "A ver, vato, {0} y cerramos." },
+                new[] { "¡Chale, ñero, ni de loco! {0} y ya.", "¡Está bien gacho ese precio, carnal! {0} y no más.", "¿Qué onda contigo, vato? {0}, es mi última." },
+                new[] { "Yo andaba buscando {0}, carnal... pero si me lo dejas en {1} le entro.", "Ese no es el que ando buscando, ñero. Con {1} te lo cierro." },
+                new[] { "Ándale, carnal, que se me hace tarde.", "¿Ya, vato? Ando con prisa.", "Ey, ñero, ¿me vas a atender o qué?" },
+                new[] { "¡Ya me hartaste, carnal! Me voy a otro lote.", "¡Qué gacho, tanto tiempo, ñero! Ahí nos vemos.", "¡No, vato! Tardaste un chorro, mejor me voy." }
             },
             // ----- NEZA: barrio, con "raza" y "carnal" -----
             new[]
