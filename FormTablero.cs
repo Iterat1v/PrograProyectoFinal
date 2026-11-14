@@ -20,6 +20,12 @@ namespace PrograProyectoFinal
         private int vibrar = 0;                    // cuenta para que tiemble el globo cuando esta enojado
         private bool sePaso = false;               // ya se fue enojado
 
+        // ----- Animaciones del cliente: entra deslizandose y su frase se escribe letra por letra -----
+        private System.Windows.Forms.Timer timerAnim = new System.Windows.Forms.Timer { Interval = 30 };
+        private int entrada = 0;                   // pixeles que le faltan para llegar a su lugar
+        private string ultimoDialogo = "";
+        private int letras = 0;                    // cuantas letras de la frase se ven ya
+
         // Letrero grande de "TURNO DE ..." que aparece al empezar cada turno
         private string letrero = "";
         private int letreroVida = 0;
@@ -50,7 +56,8 @@ namespace PrograProyectoFinal
             };
 
             timerTiempo.Tick += (s, e) => TickTiempo();
-            FormClosed += (s, e) => timerTiempo.Stop();
+            timerAnim.Tick += (s, e) => TickAnim();
+            FormClosed += (s, e) => { timerTiempo.Stop(); timerAnim.Stop(); };
             partida.NuevoCliente();
             NuevoTurno();
             // Los avisos se enseñan cuando ya se ve la ventana
@@ -69,7 +76,17 @@ namespace PrograProyectoFinal
             else
                 dialogo = partida.ClienteActual.Saludo;
             ReiniciarTiempo();
+            entrada = partida.ClienteActual != null && !partida.JugadorActual.PierdeTurno ? 260 : 0;
+            if (entrada > 0) { timerAnim.Start(); Recursos.Sonar("menu"); }
             Actualizar();
+        }
+
+        private void TickAnim()
+        {
+            if (entrada > 0) entrada = Math.Max(0, entrada - (entrada > 80 ? 22 : 9));   // llega rapido y frena al final
+            if (letras < ultimoDialogo.Length) letras += 2;
+            if (entrada == 0 && letras >= ultimoDialogo.Length) timerAnim.Stop();
+            Invalidate(new Rectangle(420, 104, 500, 380));
         }
 
         private void ReiniciarTiempo()
@@ -503,12 +520,16 @@ namespace PrograProyectoFinal
             }
 
             int temblor = (humor == 2 && !esperando) || sePaso ? ((vibrar & 1) == 0 ? -4 : 4) : 0;
+            int desliza = entrada;   // viene desde la izquierda
             Color fondoCliente = humor == 2 && ((vibrar / 3 & 1) == 0) ? Paleta.Rosa2 : humor == 1 ? Paleta.Morado2 : Paleta.Morado3;
             Pixel.R(g, 472 + temblor, 176, 192, 240, Paleta.Negro);
             Pixel.R(g, 480 + temblor, 184, 176, 224, fondoCliente);
             if (cliente != null && !jugador.PierdeTurno)
             {
-                Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480 + temblor, 200, 11);
+                Region recorte = g.Clip;
+                if (desliza > 0) g.SetClip(new Rectangle(420, 104, 500, 380));   // no se sale del showroom al entrar
+                Pixel.Sprite(g, Recursos.Clientes[cliente.Retrato], 480 + temblor - desliza, 200 + (desliza > 0 ? (desliza / 22 & 1) * 6 : 0), 11);
+                g.Clip = recorte;
                 if (humor == 1) Pixel.Texto(g, "...", 640, 206, 18, Paleta.Oro, StringAlignment.Far);
                 if (humor == 2) Pixel.Texto(g, "!!", 640, 206, 22, Paleta.Rosa, StringAlignment.Far);
                 Pixel.Texto(g, cliente.Nombre, 568, 452, 13, Paleta.Crema, StringAlignment.Center);
@@ -577,13 +598,21 @@ namespace PrograProyectoFinal
         // Si el texto no cabe en el globo, se hace más chiquita la letra
         private void DibujarDialogo(Graphics g, Rectangle area)
         {
+            // frase nueva: se vuelve a escribir desde el principio
+            if (dialogo != ultimoDialogo)
+            {
+                ultimoDialogo = dialogo;
+                letras = 0;
+                if (!timerAnim.Enabled) timerAnim.Start();
+            }
+            string visible = letras >= dialogo.Length ? dialogo : dialogo.Substring(0, Math.Max(0, letras));
             float[] tamanos = { 13, 12, 11, 10, 9, 8, 7 };
             foreach (float tam in tamanos)
             {
                 SizeF medida = g.MeasureString(dialogo, Recursos.Letra(tam), area.Width);
                 if (medida.Height <= area.Height || tam == 7)
                 {
-                    Pixel.Parrafo(g, dialogo, area, tam, Paleta.Noche);
+                    Pixel.Parrafo(g, visible, area, tam, Paleta.Noche);
                     return;
                 }
             }
