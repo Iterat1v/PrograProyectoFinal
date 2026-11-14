@@ -1,6 +1,6 @@
 namespace PrograProyectoFinal
 {
-    // Lobby: tu personaje en grande sobre su base, con CASILLERO, LOGROS y JUGAR.
+    // Lobby: tu personaje en grande sobre su base, con TIENDA, CASILLERO, LOGROS y JUGAR.
     // El que entra aquí queda como Perfiles.Activo y su nombre sale en las demás pantallas.
     public class FormLobby : FormPixel
     {
@@ -23,8 +23,10 @@ namespace PrograProyectoFinal
             btnEntrar = Boton("ENTRAR", 64, 188, 300, 56, Paleta.Agua, Paleta.Agua2, (s, e) => Entrar(), 12);
             btnCambiar = Boton("CAMBIAR DE JUGADOR", 64, 188, 300, 56, Paleta.LilaClaro, Paleta.Crema2, (s, e) => Salir(), 10);
 
-            Boton("CASILLERO", 940, 150, 300, 96, Paleta.Lila, Paleta.Morado3, (s, e) => Abrir("casillero"), 20);
-            Boton("LOGROS", 940, 262, 300, 96, Paleta.Agua, Paleta.Agua2, (s, e) => Abrir("logros"), 20);
+            Boton("TIENDA", 940, 150, 300, 96, Paleta.Oro, Paleta.Oro2, (s, e) => Abrir("tienda"), 20);
+            Boton("PASE", 940, 262, 300, 70, Paleta.Rosa, Paleta.Rosa2, (s, e) => Abrir("pase"), 14);
+            Boton("CASILLERO", 940, 346, 300, 70, Paleta.Lila, Paleta.Morado3, (s, e) => Abrir("casillero"), 14);
+            Boton("LOGROS", 940, 430, 300, 70, Paleta.Agua, Paleta.Agua2, (s, e) => Abrir("logros"), 14);
             Boton("CÓMO SE JUEGA", 300, 632, 280, 70, Paleta.Crema, Paleta.Crema2, (s, e) =>
             {
                 using (FormReglas reglas = new FormReglas()) reglas.ShowDialog(this);
@@ -83,7 +85,9 @@ namespace PrograProyectoFinal
                 return;
             }
             Recursos.Sonar("menu");
-            if (que == "logros") IrA(new FormLogros(P));
+            if (que == "tienda") IrA(new FormTienda(P));
+            else if (que == "logros") IrA(new FormLogros(P));
+            else if (que == "pase") IrA(new FormPase(P));
             else
             {
                 using (FormPersonaje casillero = new FormPersonaje(P))
@@ -165,7 +169,7 @@ namespace PrograProyectoFinal
             if (P != null && P.Racha > 0)
                 Pixel.Texto(g, $"RACHA {P.Racha}", 1228, 108, 9, P.UltimoReto >= Reto.Ayer ? Paleta.Rosa : Paleta.Tenue, StringAlignment.Far);
             if (P != null)
-                Pixel.Texto(g, $"Logros {P.CuantosLogros()}/{Logros.CANTIDAD}", 940, 528, 10, Paleta.Tenue);
+                Pixel.Texto(g, $"Logros {P.CuantosLogros()}/{Logros.CANTIDAD} · Pase nivel {P.NivelPase}", 940, 528, 10, Paleta.Tenue);
 
             if (aviso != "")
                 Pixel.Parrafo(g, aviso, new Rectangle(600, 640, 290, 60), 10, Paleta.Rosa);
