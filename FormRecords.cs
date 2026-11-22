@@ -1,4 +1,4 @@
-namespace PrograProyectoFinal
+﻿namespace PrograProyectoFinal
 {
     // Top 10 histórico (archivo records.txt) y los mejores del reto de hoy
     public class FormRecords : FormPixel
@@ -32,9 +32,9 @@ namespace PrograProyectoFinal
                 if (i < 3) Pixel.R(g, 64, y, 10, 48, medalla[i]);
                 Pixel.Texto(g, $"{i + 1}", 100, y + 24, 14, Paleta.Morado2, StringAlignment.Center);
                 Pixel.Texto(g, Records.Nombre(i), 140, y + 24, 13, Paleta.Noche);
-                Pixel.Texto(g, Records.Modo(i), 380, y + 24, 9, Paleta.Gris);
-                Pixel.Texto(g, Records.Fecha(i), 640, y + 24, 9, Paleta.Gris, StringAlignment.Far);
-                Pixel.Texto(g, Pixel.Dinero(Records.Patrimonio(i)), 820, y + 24, 12, Paleta.Verde2, StringAlignment.Far);
+                Pixel.Texto(g, Records.Modo(i), 330, y + 24, 9, Paleta.Gris);
+                Pixel.Texto(g, Records.Fecha(i), 715, y + 24, 9, Paleta.Gris, StringAlignment.Far);
+                Pixel.Texto(g, Pixel.Dinero(Records.Patrimonio(i)), 840, y + 24, 12, Paleta.Verde2, StringAlignment.Far);
             }
 
             Pixel.Panel(g, 880, 76, 360, 626, Paleta.Crema);

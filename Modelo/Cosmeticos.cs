@@ -108,7 +108,7 @@ namespace PrograProyectoFinal
 
         static Cosmeticos()
         {
-            int T = Avatar.TEZ, PE = Avatar.PEINADO, CP = Avatar.COLOR_PELO, R = Avatar.ROPA, L = Avatar.LENTES,
+            int PE = Avatar.PEINADO, CP = Avatar.COLOR_PELO, R = Avatar.ROPA, L = Avatar.LENTES,
                 G = Avatar.GORRO, M = Avatar.MASCARA, X = Avatar.EXTRA, F = Avatar.FONDO;
 
             // ===== TEZ (12) =====
