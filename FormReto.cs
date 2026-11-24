@@ -58,7 +58,7 @@ namespace PrograProyectoFinal
                 Pixel.Texto(g, Reto.Rivales[i], x + 104, 522, 12, Paleta.Noche);
                 Pixel.Texto(g, $"bot {Bot.NombresNivel[Reto.NivelRivales[i]]}", x + 104, 554, 9, Paleta.Gris);
             }
-            Pixel.Texto(g, "Premio: racha diaria (+20 monedas por día seguido, hasta 7).", 66, 624, 10, Paleta.Verde2);
+            Pixel.TextoAjustado(g, "Premio: racha diaria (+20 monedas por día seguido, hasta 7).", 66, 624, 10, Paleta.Verde2, StringAlignment.Near, 570);
             Pixel.Texto(g, "Cuenta para la misión \"Juega el reto del día\".", 66, 656, 10, Paleta.Gris);
 
             // ----- los mejores de hoy -----

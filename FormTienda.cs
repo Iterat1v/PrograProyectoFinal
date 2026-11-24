@@ -123,8 +123,8 @@ namespace PrograProyectoFinal
             int yb = t.Bottom - alto;
             Pixel.R(g, t.X, yb, t.Width, alto, oscuro);
             Pixel.R(g, t.X, yb, t.Width, 4, color);
-            Pixel.Texto(g, Tienda.Nombre(k).ToUpper(), t.X + 12, yb + (grande ? 26 : 18), grande ? 16 : (Tienda.Nombre(k).Length > 10 ? 7 : 9), Paleta.Crema);
-            Pixel.Texto(g, $"{Tienda.NombresRareza[rareza]} · {Avatar.NombresParte[parte]}", t.X + 12, yb + (grande ? 58 : 38), grande ? 9 : 6, Pixel.Aclarar(color, 0.5f));
+            Pixel.TextoAjustado(g, Tienda.Nombre(k).ToUpper(), t.X + 12, yb + (grande ? 26 : 18), grande ? 16 : (Tienda.Nombre(k).Length > 10 ? 7 : 9), Paleta.Crema, StringAlignment.Near, t.Width - 24);
+            Pixel.TextoAjustado(g, $"{Tienda.NombresRareza[rareza]} · {Avatar.NombresParte[parte]}", t.X + 12, yb + (grande ? 58 : 38), grande ? 9 : 6, Pixel.Aclarar(color, 0.5f), StringAlignment.Near, t.Width - 24);
 
             int yp = yb + (grande ? 100 : 70);
             if (tuyo)
